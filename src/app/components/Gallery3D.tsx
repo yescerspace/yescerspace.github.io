@@ -309,13 +309,8 @@ function useResilientTexture(imageUrl: string | undefined): THREE.Texture | null
 
 /** Arc length (world units) between adjacent cards — lower = denser ring, more overlap */
 const ORBIT_CARD_SPACING = 1.12;
-/** Floor radius for “All” — many items; keeps the large circular gallery look */
+/** Minimum shell radius for the Fibonacci cloud (All + filtered categories). */
 const ORBIT_MIN_RADIUS_ALL = 3.2;
-/**
- * Floor radius when a specific category is selected (usually few items).
- * Much smaller than {@link ORBIT_MIN_RADIUS_ALL} so 1–3 pieces sit on a tight ring.
- */
-const ORBIT_MIN_RADIUS_FILTERED = 0.62;
 /** When exactly two pieces are on the ring, enforce a wider radius so they do not overlap */
 const ORBIT_TWO_ITEM_MIN_RADIUS = 0.78;
 /**
@@ -327,24 +322,12 @@ const ORBIT_MIN_RADIUS_FILTERED_MANY = 1.06;
 const FILTERED_RING_SPACING_MULT_3 = 1.28;
 /** Extra arc length when 4+ items on a filtered ring (Motion, etc.). */
 const FILTERED_RING_SPACING_MULT_4PLUS = 1.52;
-/** Slightly shrink cards on crowded filtered rings so the orbit reads larger vs. slabs. */
-const FILTERED_MANY_CARD_SCALE = 0.9;
-/**
- * Filtered view, exactly two cards: Interactive / VR, 3D Archive, 2D Archive — a bit smaller
- * (Motion-style orbit; zoom still brings detail).
- */
-const FILTERED_TWO_ITEM_ARCHIVE_SCALE = 0.86;
-/** Categories that use {@link FILTERED_TWO_ITEM_ARCHIVE_SCALE} when two items are on the ring. */
-const ORBITAL_SMALL_TWO_ITEM_CATEGORIES = new Set<string>([
-  "Interactive / VR",
-  "3D Archive",
-  "2D Archive",
-]);
 
 /**
- * “All” cloud gallery: smaller cards (GIF-like), 3D scatter + drift (replaces flat ring).
+ * Cloud gallery: circular covers on a Fibonacci shell + drift.
+ * Raised well above the original 0.46 so covers read clearly on screen.
  */
-const ALL_CLOUD_LAYOUT_SCALE = 0.46;
+const ALL_CLOUD_LAYOUT_SCALE = 0.82;
 /** Extra radius for orbit / FOV framing so the 3D shell doesn’t clip. */
 const ALL_CLOUD_FRAMING_RADIUS_MULT = 1.52;
 /** Organic motion: world units drift on each axis. */
@@ -354,9 +337,9 @@ const ALL_CLOUD_WOBBLE_AMP = 0.07;
 /** “All” view: circular disc — segment count for smooth outline. */
 const ALL_CLOUD_CIRCLE_SEGMENTS = 72;
 /** Distance-based scale: near camera / mid / far shell (orbit drag updates naturally). */
-const ALL_CLOUD_DEPTH_NEAR_SCALE = 1.44;
-const ALL_CLOUD_DEPTH_MID_SCALE = 0.88;
-const ALL_CLOUD_DEPTH_FAR_SCALE = 0.48;
+const ALL_CLOUD_DEPTH_NEAR_SCALE = 1.52;
+const ALL_CLOUD_DEPTH_MID_SCALE = 0.98;
+const ALL_CLOUD_DEPTH_FAR_SCALE = 0.68;
 
 /**
  * Front/back faces match hero artwork aspect: 1080×1080 (square).
@@ -467,7 +450,7 @@ function ringRadiusWorld(
 const HOVER_SCALE = 1.06;
 const HOVER_LIFT = 0.16;
 /** Uniform mesh scale — larger cards; hover/zoom multiply on top (textures unchanged) */
-const CARD_MESH_BASE_SCALE = 1.2;
+const CARD_MESH_BASE_SCALE = 1.32;
 /** Pull ring positions toward center for a tighter circle (after parallax) */
 const RING_RADIAL_COMPACT = 0.8;
 /**
@@ -783,10 +766,6 @@ interface GallerySceneProps {
   ringRadius: number;
   /** Wider radius for orbit min/max + FOV when “All” cloud needs extra margin. */
   orbitFramingRadius: number;
-  /** Current filter label; used for per-category card scale and “All” satellite float. */
-  activeFilter: string;
-  /** True when a single category is selected (not “All”) — wider orbit + optional card scale. */
-  filteredCategoryActive: boolean;
   hoveredIndex: number | null;
   setHoveredIndex: (i: number | null) => void;
   modalOpen: boolean;
@@ -801,7 +780,6 @@ function GalleryCardMesh({
   visibleCount,
   radius,
   cardScaleMul,
-  filteredCategoryActive,
   satelliteFloat,
   orbitMinDistance,
   orbitMaxDistance,
@@ -816,11 +794,9 @@ function GalleryCardMesh({
   slot: number;
   visibleCount: number;
   radius: number;
-  /** Multiplier on {@link CARD_MESH_BASE_SCALE} for filtered rings with many items. */
+  /** Multiplier on {@link CARD_MESH_BASE_SCALE} (cloud disc layout). */
   cardScaleMul: number;
-  /** When a single category is selected — used with {@link useOrbitalBillboard} below. */
-  filteredCategoryActive: boolean;
-  /** “All” view: keep ring slots; add subtle bob + radius breathe (satellite motion). */
+  /** Cloud shell: Fibonacci positions + drift (same for “All” and single categories). */
   satelliteFloat: boolean;
   /** Orbit zoom limits (world units) — depth scale bands for “All” cloud. */
   orbitMinDistance: number;
@@ -980,11 +956,6 @@ function GalleryCardMesh({
 
     const floatT = state.clock.elapsedTime;
     const n = Math.max(visibleCount, 1);
-    /** “All” cloud: billboard; ring: two-card or filtered 3+. */
-    const useOrbitalBillboard =
-      satelliteFloat ||
-      n === 2 ||
-      (filteredCategoryActive && n >= 3);
     const angle = (slot / n) * Math.PI * 2;
 
     const zk = Math.min(1, delta * ZOOM_LERP);
@@ -1126,18 +1097,14 @@ function GalleryCardMesh({
       pz = basePz + inwardZ * inwardPull;
       localY = yHover;
 
-      if (useOrbitalBillboard) {
-        _toCamera.subVectors(
-          camera.position,
-          _scratchA.set(px, ORBIT_TARGET_Y + localY, pz),
-        );
-        _toCamera.y = 0;
-        const hLen = Math.hypot(_toCamera.x, _toCamera.z);
-        if (hLen > 1e-6) {
-          yaw = Math.atan2(_toCamera.x, _toCamera.z);
-        } else {
-          yaw = Math.atan2(dx, dz) - Math.PI / 2;
-        }
+      _toCamera.subVectors(
+        camera.position,
+        _scratchA.set(px, ORBIT_TARGET_Y + localY, pz),
+      );
+      _toCamera.y = 0;
+      const hLen = Math.hypot(_toCamera.x, _toCamera.z);
+      if (hLen > 1e-6) {
+        yaw = Math.atan2(_toCamera.x, _toCamera.z);
       } else {
         yaw = Math.atan2(dx, dz) - Math.PI / 2;
       }
@@ -1375,8 +1342,6 @@ function GalleryScene({
   visibleIndices,
   ringRadius,
   orbitFramingRadius,
-  activeFilter,
-  filteredCategoryActive,
   hoveredIndex,
   setHoveredIndex,
   modalOpen,
@@ -1385,33 +1350,12 @@ function GalleryScene({
   onSoftGalleryHint,
 }: GallerySceneProps) {
   const visibleCount = visibleIndices.length;
-  const activeFilterKey = activeFilter;
-  const cardScaleMul = useMemo(() => {
-    let mul = 1;
-    if (activeFilterKey === "All") {
-      mul *= ALL_CLOUD_LAYOUT_SCALE;
-    }
-    if (filteredCategoryActive && visibleCount >= 4) {
-      mul *= FILTERED_MANY_CARD_SCALE;
-    }
-    if (
-      filteredCategoryActive &&
-      visibleCount === 2 &&
-      ORBITAL_SMALL_TWO_ITEM_CATEGORIES.has(activeFilterKey)
-    ) {
-      mul *= FILTERED_TWO_ITEM_ARCHIVE_SCALE;
-    }
-    return mul;
-  }, [filteredCategoryActive, visibleCount, activeFilterKey]);
-
-  const satelliteFloat = activeFilterKey === "All";
+  /** Same disc + Fibonacci “satellite” motion as “All”, including 1–2 items on a category. */
+  const cardScaleMul = ALL_CLOUD_LAYOUT_SCALE;
+  const satelliteFloat = true;
 
   const autoRotateSpeed =
-    visibleCount === 2 ||
-    (filteredCategoryActive && visibleCount >= 3) ||
-    (activeFilterKey === "All" && visibleCount >= 3)
-      ? AUTO_ROTATE_SPEED_ORBITAL
-      : AUTO_ROTATE_SPEED;
+    visibleCount >= 2 ? AUTO_ROTATE_SPEED_ORBITAL : AUTO_ROTATE_SPEED;
   const { size } = useThree();
   const aspect = Math.max(size.width / Math.max(size.height, 1), 0.25);
   const { min: minZoomDistance, max: maxZoomDistance } = useMemo(
@@ -1480,7 +1424,6 @@ function GalleryScene({
               visibleCount={visibleIndices.length}
               radius={ringRadius}
               cardScaleMul={cardScaleMul}
-              filteredCategoryActive={filteredCategoryActive}
               satelliteFloat={satelliteFloat}
               orbitMinDistance={minZoomDistance}
               orbitMaxDistance={maxZoomDistance}
@@ -1806,24 +1749,18 @@ export function Gallery3D({
       .filter((i): i is number => i >= 0);
   }, [images, activeFilter]);
 
+  /**
+   * Same shell math as “All” for every category — do not pass `isFilteredCategory` or
+   * spacing/radius diverge (Motion vs All felt different).
+   */
   const ringRadius = useMemo(
-    () =>
-      ringRadiusWorld(
-        visibleIndices.length,
-        activeFilter === "All"
-          ? ORBIT_MIN_RADIUS_ALL
-          : ORBIT_MIN_RADIUS_FILTERED,
-        activeFilter !== "All",
-      ),
-    [visibleIndices.length, activeFilter],
+    () => ringRadiusWorld(visibleIndices.length, ORBIT_MIN_RADIUS_ALL, false),
+    [visibleIndices.length],
   );
 
   const orbitFramingRadius = useMemo(
-    () =>
-      activeFilter === "All"
-        ? ringRadius * ALL_CLOUD_FRAMING_RADIUS_MULT
-        : ringRadius,
-    [activeFilter, ringRadius],
+    () => ringRadius * ALL_CLOUD_FRAMING_RADIUS_MULT,
+    [ringRadius],
   );
 
   const cameraWorldPos = useMemo((): [number, number, number] => {
@@ -1950,8 +1887,6 @@ export function Gallery3D({
               visibleIndices={visibleIndices}
               ringRadius={ringRadius}
               orbitFramingRadius={orbitFramingRadius}
-              activeFilter={activeFilter ?? "All"}
-              filteredCategoryActive={activeFilter !== "All"}
               hoveredIndex={hoveredIndex}
               setHoveredIndex={setHoveredIndex}
               modalOpen={detailModalOpen}
