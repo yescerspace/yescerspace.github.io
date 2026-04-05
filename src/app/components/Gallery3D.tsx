@@ -576,6 +576,8 @@ function AdaptiveFovSync({
 }
 
 const AUTO_ROTATE_SPEED = 0.45;
+/** Slightly faster orbit when a category shows exactly two cards (keeps the pair from feeling sluggish). */
+const AUTO_ROTATE_SPEED_TWO_ITEMS = 0.68;
 const HOVER_LERP = 10;
 
 /** Zoom-driven layout/parallax (smoothed in useFrame) */
@@ -1027,6 +1029,8 @@ function GalleryScene({
   onSoftGalleryHint,
 }: GallerySceneProps) {
   const visibleCount = visibleIndices.length;
+  const autoRotateSpeed =
+    visibleCount === 2 ? AUTO_ROTATE_SPEED_TWO_ITEMS : AUTO_ROTATE_SPEED;
   const { size } = useThree();
   const aspect = Math.max(size.width / Math.max(size.height, 1), 0.25);
   const { min: minZoomDistance, max: maxZoomDistance } = useMemo(
@@ -1058,7 +1062,7 @@ function GalleryScene({
         minDistance={minZoomDistance}
         maxDistance={maxZoomDistance}
         autoRotate={!modalOpen && hoveredIndex === null}
-        autoRotateSpeed={AUTO_ROTATE_SPEED}
+        autoRotateSpeed={autoRotateSpeed}
         minPolarAngle={THREE.MathUtils.degToRad(78)}
         maxPolarAngle={THREE.MathUtils.degToRad(88)}
         target={[0, ORBIT_TARGET_Y, 0]}

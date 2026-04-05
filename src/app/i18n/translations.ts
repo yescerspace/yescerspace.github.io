@@ -130,7 +130,7 @@ const portfolioProjectsEn: Record<string, PortfolioProjectCopy> = {
     year: "2024",
   },
   "3d-archive/studio-reel": {
-    title: "Studio Reel",
+    title: "HELLO WORLD",
     description:
       "Environmental storytelling, workspace, light, and material as a designed set.",
     year: "2025",
