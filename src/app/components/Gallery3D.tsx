@@ -1629,7 +1629,7 @@ export function Gallery3D({
           >
             <div
               ref={modalDetailWheelRootRef}
-              className="absolute inset-0 flex items-center justify-center p-6 sm:p-10"
+              className="absolute inset-0 overflow-y-auto overscroll-y-contain p-6 sm:p-10 flex items-start justify-center"
               style={{
                 background: "var(--modal-backdrop)",
                 backdropFilter: "blur(20px)",
@@ -1644,7 +1644,7 @@ export function Gallery3D({
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.94, opacity: 0, y: 20 }}
               transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-              className="relative flex w-full max-w-6xl flex-col items-stretch gap-10 lg:flex-row lg:items-start lg:gap-14"
+              className="relative my-auto flex w-full max-w-6xl min-h-0 flex-col items-stretch gap-10 lg:flex-row lg:items-start lg:gap-14"
               onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
             >
               <div className="min-h-0 w-full min-w-0 flex-1 shrink-0 bg-app-shell-bg lg:max-w-[min(100%,560px)]">
@@ -1664,7 +1664,7 @@ export function Gallery3D({
                   duration: 0.4,
                   ease: [0.25, 0.46, 0.45, 0.94],
                 }}
-                className="flex flex-1 flex-col justify-center space-y-6 lg:sticky lg:top-24 lg:max-w-md lg:self-start"
+                className="flex min-h-0 w-full flex-1 flex-col justify-start gap-10 lg:sticky lg:top-24 lg:max-w-md lg:self-start"
               >
                 <div>
                   <p className="mb-2 text-xs uppercase tracking-[0.2em] text-gray-400">
@@ -1681,24 +1681,27 @@ export function Gallery3D({
                   </p>
                 </div>
 
-                {selectedPortfolioCopy.tools.trim() !== "" ? (
-                  <div className="border-t border-gray-100/80 pt-4">
-                    <span className="text-xs uppercase tracking-[0.18em] text-gray-400">
-                      {galleryCopy.modalToolsLabel}:
-                    </span>
-                    <p className="mt-1.5 text-[0.95rem] leading-snug text-gray-800">
-                      {selectedPortfolioCopy.tools}
-                    </p>
+                <div className="border-t border-gray-100/80 pt-10">
+                  <div className="flex flex-col gap-6">
+                    {selectedPortfolioCopy.tools.trim() !== "" ? (
+                      <div className="flex flex-col gap-1.5 sm:flex-row sm:items-baseline sm:gap-4">
+                        <span className="shrink-0 text-xs uppercase tracking-[0.18em] text-gray-400">
+                          {galleryCopy.modalToolsLabel ?? "Tools"}
+                        </span>
+                        <p className="text-[0.95rem] leading-relaxed text-gray-500 sm:min-w-0 sm:flex-1">
+                          {selectedPortfolioCopy.tools}
+                        </p>
+                      </div>
+                    ) : null}
+                    <div className="flex flex-col gap-1.5 sm:flex-row sm:items-baseline sm:gap-4">
+                      <span className="shrink-0 text-xs uppercase tracking-[0.18em] text-gray-400">
+                        {galleryCopy.modalYear}
+                      </span>
+                      <span className="text-[0.95rem] leading-relaxed text-gray-500 tabular-nums sm:min-w-0 sm:flex-1">
+                        {selectedPortfolioCopy.year}
+                      </span>
+                    </div>
                   </div>
-                ) : null}
-
-                <div className="flex items-baseline gap-4 border-t border-gray-100/80 pt-4">
-                  <span className="text-xs uppercase tracking-[0.18em] text-gray-400">
-                    {galleryCopy.modalYear}
-                  </span>
-                  <span className="tabular-nums text-gray-800">
-                    {selectedPortfolioCopy.year}
-                  </span>
                 </div>
 
                 <motion.button

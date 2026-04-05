@@ -24,7 +24,6 @@ Category folders typically used:
 |--------------------|---------------------|
 | Interactive / VR   | `interactive-vr/`   |
 | Motion             | `motion/`           |
-| Campaigns          | `campaigns/`        |
 | 3D Archive         | `3d-archive/`       |
 | 2D Archive         | `2d-archive/`       |
 

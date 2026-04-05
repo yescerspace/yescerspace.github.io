@@ -11,7 +11,6 @@ import {
 export const GALLERY_CATEGORIES = [
   "Interactive / VR",
   "Motion",
-  "Campaigns",
   "3D Archive",
   "2D Archive",
 ] as const;

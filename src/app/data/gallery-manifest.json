@@ -54,23 +54,23 @@
       ]
     },
     {
-      "category": "Campaigns",
-      "categoryFolder": "campaigns",
+      "category": "Motion",
+      "categoryFolder": "motion",
       "slug": "JusteDebout",
       "images": [
-        "gallery/campaigns/JusteDebout/0.jpg",
-        "gallery/campaigns/JusteDebout/1.mp4",
-        "gallery/campaigns/JusteDebout/2.jpg",
-        "gallery/campaigns/JusteDebout/3.jpg"
+        "gallery/motion/JusteDebout/0.jpg",
+        "gallery/motion/JusteDebout/1.mp4",
+        "gallery/motion/JusteDebout/2.jpg",
+        "gallery/motion/JusteDebout/3.jpg"
       ]
     },
     {
-      "category": "Campaigns",
-      "categoryFolder": "campaigns",
+      "category": "Motion",
+      "categoryFolder": "motion",
       "slug": "Western Union",
       "images": [
-        "gallery/campaigns/Western Union/0.jpg",
-        "gallery/campaigns/Western Union/1.mp4"
+        "gallery/motion/Western Union/0.jpg",
+        "gallery/motion/Western Union/1.mp4"
       ]
     },
     {
