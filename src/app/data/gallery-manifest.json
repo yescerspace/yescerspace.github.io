@@ -1,6 +1,7 @@
 {
+  "sourceOfTruth": "MANUAL FILE — edit this JSON to define gallery projects and media paths. It is not overwritten by build or dev. Place assets under public/ as listed in images[]. Titles, descriptions, years: src/app/i18n/translations.ts (portfolio.projects), keys categoryFolder/slug.",
   "version": 1,
-  "generated": "2026-04-05T13:49:34.631Z",
+  "lastUpdated": "2026-04-05T14:04:58.024Z",
   "projects": [
     {
       "category": "Interactive / VR",

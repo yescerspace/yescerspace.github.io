@@ -1,5 +1,10 @@
 import type { GalleryCategory } from "../context/WorksCategoryContext";
+import { slugFromProjectKey } from "../utils/galleryProjectKey";
 
+/**
+ * **Portfolio text (title, description, year)** — sole source for UI copy.
+ * Project list and media paths come from hand-maintained `gallery-manifest.json` (see `galleryData.ts`).
+ */
 export type Locale = "en" | "de" | "tr";
 
 /** Display and persistence order: EN → DE → TR */
@@ -69,10 +74,9 @@ export type TranslationMessages = {
 };
 
 /**
- * Detail modal copy per project. Keys must match `categoryFolder/slug` in
- * `gallery-manifest.json` (see `galleryData.ts`). All locales should list the same keys.
+ * Keys must match `gallery-manifest.json` projects (`categoryFolder/slug`).
+ * Same keys required in EN, DE, and TR.
  */
-/** Keys must match `gallery-manifest.json` (`categoryFolder/slug`). */
 const portfolioProjectsEn: Record<string, PortfolioProjectCopy> = {
   "interactive-vr/Cozy Experience": {
     title: "Cozy Experience",
@@ -110,8 +114,8 @@ const portfolioProjectsEn: Record<string, PortfolioProjectCopy> = {
       "I worked on commercial projects for Western Union, producing animated promotional materials using Adobe After Effects. The content was developed in multiple languages including Greek, Georgian, Russian, and English, to effectively reach and engage diverse international audiences.",
     year: "2019",
   },
-  "3d-archive/Short Animation": {
-    title: "Short Animation",
+  "3d-archive/Emberfall-Environment": {
+    title: "Realistic Short Film",
     description:
       "End-to-end development of a large-scale, fantasy-inspired library environment for a realistic short film—at the intersection of design, storytelling, and real-time production. Set in the Emberfall Kingdom; the work covered environment assets, layout, optimized UV workflows, and the final trailer including video editing and sound design. Texturing, PBR materials, and the princess character were created by other artists.",
     year: "2024",
@@ -485,27 +489,30 @@ export function localizedCategory(
 /**
  * Resolves portfolio copy for the current locale.
  * Lookup is a plain object get: `messages.portfolio.projects[projectKey]` — must match
- * `projectKeyFromManifestEntry` / `gallery-manifest.json` keys byte-for-byte (after trim in galleryData).
+ * `projectKeyFromManifestEntry` / `gallery-manifest.json` keys (see `galleryProjectKey.ts`).
  */
 export function portfolioProjectCopy(
   messages: TranslationMessages,
   projectKey: string,
 ): PortfolioProjectCopy {
+  const slug = slugFromProjectKey(projectKey);
+  const yearDash = messages.gallery.modalYearFallback;
+
   const p = messages.portfolio.projects[projectKey];
   if (p) {
     const title = p.title?.trim() ?? "";
     const year = String(p.year ?? "").trim();
-    const titleOut = title || messages.gallery.modalProjectFallback;
-    const yearOut = year || messages.gallery.modalYearFallback;
+    const titleOut = title || slug;
+    const yearOut = year || yearDash;
     if (import.meta.env?.DEV) {
       if (!title) {
         console.warn(
-          `[portfolio] Empty title for projectKey: ${JSON.stringify(projectKey)}`,
+          `[portfolio] Empty title — using slug fallback | projectKey=${JSON.stringify(projectKey)} | slug=${JSON.stringify(slug)}`,
         );
       }
       if (!year) {
         console.warn(
-          `[portfolio] Empty year for projectKey: ${JSON.stringify(projectKey)}`,
+          `[portfolio] Empty year — using "—" | projectKey=${JSON.stringify(projectKey)}`,
         );
       }
     }
@@ -517,8 +524,15 @@ export function portfolioProjectCopy(
   }
   if (import.meta.env?.DEV) {
     const available = Object.keys(messages.portfolio.projects);
-    console.error("[portfolio] LOOKUP MISS — RUNTIME KEY:", JSON.stringify(projectKey));
-    console.error("[portfolio] Object.keys(messages.portfolio.projects):", available);
+    console.error(
+      `[portfolio] PROJECT KEY MISMATCH: expected=${JSON.stringify(projectKey)} (portfolio.projects lookup) | actual=missing — no entry for this key.`,
+    );
+    console.error(
+      "[portfolio] translation keys (sample):",
+      available.slice(0, 8),
+      "| total:",
+      available.length,
+    );
     for (const candidate of available) {
       if (candidate.length !== projectKey.length) continue;
       if (candidate === projectKey) continue;
@@ -538,9 +552,9 @@ export function portfolioProjectCopy(
     }
   }
   return {
-    title: messages.gallery.modalProjectFallback,
+    title: slug,
     description: "",
-    year: messages.gallery.modalYearFallback,
+    year: yearDash,
   };
 }
 

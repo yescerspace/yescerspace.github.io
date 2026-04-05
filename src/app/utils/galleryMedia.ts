@@ -88,5 +88,12 @@ export function primaryGalleryTextureUrl(urls: readonly string[]): string {
     if (!u) continue;
     if (galleryFilenameIndex(u) === 0 && isRasterImageUrl(u)) return u;
   }
-  return publicAsset("fallback.jpg");
+  const fb = publicAsset("fallback.jpg");
+  if (import.meta.env.DEV && urls.length > 0) {
+    console.error(
+      "[gallery] ERROR: no 0.jpg/png/webp for card — using fallback.jpg. urls=",
+      urls,
+    );
+  }
+  return fb;
 }

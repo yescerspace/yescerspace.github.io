@@ -1,23 +1,17 @@
 #!/usr/bin/env node
 /**
- * Runs gallery sync (filesystem → manifest), then writes a minimal valid JPEG
- * into every image path in the manifest plus public/fallback.jpg.
- * Replace files under public/gallery with your own assets; keep paths or re-sync.
+ * Reads src/app/data/gallery-manifest.json (manually maintained), then writes a minimal
+ * valid JPEG into every image path listed there plus public/fallback.jpg.
+ * Does not scan public/gallery or modify the manifest.
  */
 import fs from "node:fs";
 import path from "node:path";
-import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, "..");
 const publicRoot = path.join(root, "public");
 const manifestPath = path.join(root, "src", "app", "data", "gallery-manifest.json");
-
-execSync("node scripts/sync-gallery-from-disk.mjs", {
-  cwd: root,
-  stdio: "inherit",
-});
 
 /** Tiny 1×1 JPEG (shared placeholder until you replace files) */
 const JPEG = Buffer.from(
@@ -26,7 +20,7 @@ const JPEG = Buffer.from(
 );
 
 if (!fs.existsSync(manifestPath)) {
-  console.error("Missing gallery-manifest.json — run npm run gallery:sync first.");
+  console.error("Missing src/app/data/gallery-manifest.json — create it or restore from git.");
   process.exit(1);
 }
 

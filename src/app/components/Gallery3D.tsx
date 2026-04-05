@@ -27,9 +27,9 @@ import { useLanguage } from "../context/LanguageContext";
 import {
   localizedCategory,
   portfolioProjectCopy,
-  translations,
 } from "../i18n/translations";
 import { publicAsset } from "../utils/publicAsset";
+import { logGalleryHeroLoadErrorsInDev } from "../utils/galleryDevValidation";
 import {
   clearGalleryDetailVideoPreload,
   detailPageMediaUrls,
@@ -182,26 +182,50 @@ function createSolidFallbackTexture(): THREE.DataTexture {
   return tex;
 }
 
+/** Shared light neutral — cards never start textureless (avoids a black/dark flash). */
+let lightCardPlaceholderTexture: THREE.DataTexture | null = null;
+function getLightCardPlaceholderTexture(): THREE.DataTexture {
+  if (!lightCardPlaceholderTexture) {
+    const data = new Uint8Array([0xe6, 0xe7, 0xeb, 255]);
+    const tex = new THREE.DataTexture(data, 1, 1, THREE.RGBAFormat);
+    tex.needsUpdate = true;
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.magFilter = THREE.NearestFilter;
+    tex.minFilter = THREE.NearestFilter;
+    lightCardPlaceholderTexture = tex;
+    applySquareFaceTextureUV(lightCardPlaceholderTexture);
+    configureTexture(lightCardPlaceholderTexture);
+  }
+  return lightCardPlaceholderTexture;
+}
+
 /**
  * Loads a texture via TextureLoader; never throws. Falls back to `publicAsset("fallback.jpg")`, then a solid color.
- * Only exposes a texture once the GPU image is fully loaded (or fallback is ready).
+ * Starts from a light placeholder so the card is never texture-null while loading.
  */
 function useResilientTexture(imageUrl: string | undefined): THREE.Texture | null {
-  const [texture, setTexture] = useState<THREE.Texture | null>(null);
+  const placeholder = getLightCardPlaceholderTexture();
+  const [texture, setTexture] = useState<THREE.Texture | null>(() => placeholder);
+  const lastLoadedRef = useRef<THREE.Texture | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    let activeTexture: THREE.Texture | null = null;
+    setTexture(placeholder);
+
+    const disposeLastLoaded = () => {
+      if (lastLoadedRef.current) {
+        lastLoadedRef.current.dispose();
+        lastLoadedRef.current = null;
+      }
+    };
 
     const commit = (t: THREE.Texture) => {
       if (cancelled) {
         t.dispose();
         return;
       }
-      if (activeTexture && activeTexture !== t) {
-        activeTexture.dispose();
-      }
-      activeTexture = t;
+      disposeLastLoaded();
+      lastLoadedRef.current = t;
       configureTexture(t);
       setTexture(t);
     };
@@ -275,13 +299,10 @@ function useResilientTexture(imageUrl: string | undefined): THREE.Texture | null
 
     return () => {
       cancelled = true;
-      if (activeTexture) {
-        activeTexture.dispose();
-        activeTexture = null;
-      }
-      setTexture(null);
+      disposeLastLoaded();
+      setTexture(placeholder);
     };
-  }, [imageUrl]);
+  }, [imageUrl, placeholder]);
 
   return texture;
 }
@@ -662,7 +683,12 @@ function GalleryCardMesh({
   const smoothOpacityRef = useRef(1);
   const smoothMeshScaleRef = useRef(CARD_MESH_BASE_SCALE);
 
-  const texture = useResilientTexture(primaryGalleryImageUrl(image));
+  const finalImageUrl = primaryGalleryImageUrl(image);
+  useLayoutEffect(() => {
+    console.log("BASE URL:", import.meta.env.BASE_URL);
+    console.log("FINAL IMAGE URL:", finalImageUrl);
+  }, [finalImageUrl]);
+  const texture = useResilientTexture(finalImageUrl);
 
   const backMap = useMemo(() => {
     if (!texture) return null;
@@ -696,12 +722,10 @@ function GalleryCardMesh({
       opacity: 1,
       depthWrite: true,
     });
-    /**
-     * Unlit artwork. Stronger than full-white multiply so covers stay photographic, not paper-white.
-     */
+    /** Unlit artwork — full white tint when mapped so cards never read as black while loading. */
     const front = new THREE.MeshBasicMaterial({
       map: texture ?? undefined,
-      color: hasMap ? new THREE.Color(0.74, 0.74, 0.78) : PLACEHOLDER_GRAY,
+      color: hasMap ? new THREE.Color(0.96, 0.96, 0.98) : PLACEHOLDER_GRAY,
       transparent: false,
       opacity: 1,
       depthWrite: true,
@@ -1150,6 +1174,7 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
 
   const detailUrlsKey = useMemo(() => detailUrls.join("\0"), [detailUrls]);
+  const heroUrl = useMemo(() => primaryGalleryTextureUrl(urls), [urls]);
   const [readyUrls, setReadyUrls] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
@@ -1237,14 +1262,29 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
     schedulePlaybackSync();
   }, [detailMediaAllReady, schedulePlaybackSync]);
 
+  /** No `1+` media — still show hero (`0.*`) so the modal is never empty. */
   if (detailUrls.length === 0) {
     return (
       <div
         ref={setScrollRef}
-        className="min-h-[min(70vh,580px)] w-full min-w-0 bg-transparent"
+        className="min-h-[min(70vh,580px)] w-full min-w-0 bg-app-shell-bg/40"
         role="region"
         aria-label={heroAlt}
-      />
+      >
+        <img
+          src={heroUrl}
+          alt={heroAlt}
+          className="block h-auto max-w-full w-full select-none object-contain"
+          draggable={false}
+          loading="eager"
+          decoding="async"
+          onError={(e) => {
+            const el = e.currentTarget;
+            el.onerror = null;
+            el.src = fallbackImageUrl();
+          }}
+        />
+      </div>
     );
   }
 
@@ -1370,16 +1410,8 @@ export function Gallery3D({
   );
 
   useEffect(() => {
-    if (!import.meta.env.DEV || selectedImage == null) return;
-    const projectKey = selectedImage.projectKey;
-    console.log("RUNTIME KEY:", projectKey);
-    const localeKeys = Object.keys(messages.portfolio.projects);
-    console.log("Object.keys(messages.portfolio.projects):", localeKeys);
-    const enKeys = Object.keys(translations.en.portfolio.projects);
-    console.log("Object.keys(translations.en.portfolio.projects):", enKeys);
-    console.log("lookup hit (locale):", projectKey in messages.portfolio.projects);
-    console.log("lookup hit (en):", projectKey in translations.en.portfolio.projects);
-  }, [messages, selectedImage]);
+    logGalleryHeroLoadErrorsInDev(images);
+  }, [images]);
 
   /** Full-opacity “flash”; false = resting soft style (low opacity + nudge) */
   const [exploreHintProminent, setExploreHintProminent] = useState(true);

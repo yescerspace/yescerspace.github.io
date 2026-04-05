@@ -1,22 +1,22 @@
 # Media documentation
 
-## Local assets only
+## Local assets
 
-- **Gallery images**: `public/gallery/` — category folders and one subfolder per project; see [`public/gallery/README.md`](../public/gallery/README.md). Per project, name files **`0.*`** (hero + cover), **`1.*`**, **`2.*`**, … for the rest.
-- **Generated index**: `src/app/data/gallery-manifest.json` is produced by **`scripts/sync-gallery-from-disk.mjs`** (run via **`npm run gallery:sync`**, or automatically when you use **`npm run dev`** / **`npm run build`** and when files under `public/gallery` change).
+- **Gallery images**: `public/gallery/` — paths referenced from **`src/app/data/gallery-manifest.json`** (manually edited; not auto-generated). See [`public/gallery/README.md`](../public/gallery/README.md). Per project, name files **`0.*`** (hero + cover), **`1.*`**, **`2.*`**, … as needed.
+- **Gallery index**: **`src/app/data/gallery-manifest.json`** — **manual source of truth** for project list and `images[]`. Nothing in `npm run dev` / `npm run build` rewrites it.
 - **Runtime code**: `src/app/data/galleryData.ts` imports the manifest and wraps paths with **`publicAsset()`** from **`src/app/utils/publicAsset.ts`** so URLs respect Vite `base`.
 - **Portfolio titles, descriptions, years (EN / DE / TR)**: **`src/app/i18n/translations.ts`** — `portfolioProjectsEn` / `portfolioProjectsDe` / `portfolioProjectsTr`, keyed by `categoryFolder/slug` (see `portfolioProjectCopy()` in the same file).
 - **Videos** (when you add them): `public/videos/` — see [`public/videos/README.md`](../public/videos/README.md).
 - **Global image fallback** (load errors): `public/fallback.jpg`.
 
-## After clone or empty folders
+## After clone or placeholder fill
 
 ```bash
 npm run gallery:placeholders
 ```
 
-This syncs from disk, then writes tiny placeholder JPEGs for every image path in the manifest plus `public/fallback.jpg`.
+Reads the current **`gallery-manifest.json`** and writes tiny JPEGs for each listed image path (plus `public/fallback.jpg`). Does not modify the manifest.
 
 ## Categories
 
-Folder names under `public/gallery/` match categories: `interactive-vr/`, `motion/`, `campaigns/`, `3d-archive/`, `2d-archive/`. Add **projects** as subfolders inside those; wiring is in `scripts/sync-gallery-from-disk.mjs` and nav order in `WorksCategoryContext`.
+Folder names under `public/gallery/` should match what you declare in **`gallery-manifest.json`** (`categoryFolder` / `slug`). Nav category order is defined in `WorksCategoryContext` / `translations.ts`.

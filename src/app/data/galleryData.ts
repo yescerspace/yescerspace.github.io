@@ -4,30 +4,32 @@ import {
   type GalleryCategory,
 } from "../context/WorksCategoryContext";
 import { translations } from "../i18n/translations";
+import {
+  projectKeyFromParts,
+} from "../utils/galleryProjectKey";
 import { publicAsset } from "../utils/publicAsset";
 import galleryManifest from "./gallery-manifest.json";
 
 /**
- * Gallery media paths come from `public/gallery/` (sync → gallery-manifest.json).
- * Titles, descriptions, and years are maintained in `src/app/i18n/translations.ts`
- * under `portfolio.projects` (keys: `categoryFolder/slug`).
+ * Gallery **project list and media paths** come from **`gallery-manifest.json`** (hand-edited;
+ * nothing in dev/build overwrites it).
+ *
+ * **Sources of truth:**
+ * - Which projects exist and their `images[]` paths → **`src/app/data/gallery-manifest.json`**
+ * - Titles, descriptions, years → **`src/app/i18n/translations.ts`** → `portfolio.projects`
+ *
+ * `projectKey` = `categoryFolder/slug` and must match translation keys exactly.
  *
  * @see public/gallery/README.md
  */
 export type GalleryManifestProject = (typeof galleryManifest.projects)[number];
 
-/**
- * Canonical lookup key for `translations.*.portfolio.projects`.
- * Must be byte-identical to keys in `translations.ts` (same string as `categoryFolder + "/" + slug` in manifest).
- * Trims manifest fields so accidental whitespace in JSON cannot break lookup.
- */
+/** Canonical key — same as `projectKeyFromParts` (see `galleryProjectKey.ts`). */
 export function projectKeyFromManifestEntry(entry: {
   categoryFolder: string;
   slug: string;
 }): string {
-  const folder = entry.categoryFolder.trim();
-  const slug = entry.slug.trim();
-  return `${folder}/${slug}`;
+  return projectKeyFromParts(entry.categoryFolder, entry.slug);
 }
 
 function projectKey(entry: { categoryFolder: string; slug: string }): string {
@@ -60,6 +62,10 @@ if (import.meta.env?.DEV) {
   );
   for (const p of galleryManifest.projects) {
     const cat = p.category as GalleryCategory;
+    const k = projectKey(p);
+    console.log(
+      `[galleryData] projectKey generation: categoryFolder=${JSON.stringify(p.categoryFolder)} slug=${JSON.stringify(p.slug)} → projectKey=${JSON.stringify(k)}`,
+    );
     if (!GALLERY_CATEGORIES.includes(cat)) {
       console.warn(
         `[galleryData] Unknown category in manifest: "${p.category}" (project "${p.slug}").`,
@@ -67,21 +73,17 @@ if (import.meta.env?.DEV) {
       continue;
     }
     byCategory.set(cat, (byCategory.get(cat) ?? 0) + 1);
-    const k = projectKey(p);
     if (!enProjectKeys.has(k)) {
       console.error(
-        `[galleryData] Manifest projectKey not in translations.en.portfolio.projects: ${JSON.stringify(k)}`,
+        `[galleryData] PROJECT KEY MISMATCH: expected=${JSON.stringify(k)} (translation key in en.portfolio.projects) | actual=missing — add this key to translations (EN/DE/TR).`,
       );
-      console.error(
-        "[galleryData] Object.keys(messages.portfolio.projects) (en):",
-        [...enProjectKeys].sort(),
-      );
+      console.error("[galleryData] EN keys (sample):", [...enProjectKeys].sort());
     }
   }
   for (const k of enProjectKeys) {
     if (!manifestKeys.has(k)) {
       console.error(
-        `[galleryData] translations key not in manifest (orphan): ${JSON.stringify(k)}`,
+        `[galleryData] PROJECT KEY MISMATCH: expected=manifest project | actual=${JSON.stringify(k)} (orphan translation key — remove or add manifest row).`,
       );
     }
   }

@@ -1,62 +1,44 @@
 import { defineConfig } from 'vite'
 import path from 'path'
-import { execSync } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const projectRoot = path.resolve(__dirname)
 
-
-function gallerySyncPlugin() {
-  const run = () => {
-    execSync('node scripts/sync-gallery-from-disk.mjs', {
-      cwd: projectRoot,
-      stdio: 'inherit',
-    })
+/**
+ * GitHub Actions: `GITHUB_REPOSITORY` is `owner/repo`. Project sites live at
+ * `https://<user>.github.io/<repo>/` → base `/<repo>/`.
+ * User/org Pages repo `*.github.io` is served at the domain root → base `/`.
+ * Local and non-CI builds: `/`.
+ * `import.meta.env.BASE_URL` is derived from this; no VITE_BASE or manual env.
+ */
+function resolveViteBase(): string {
+  if (process.env.GITHUB_ACTIONS !== 'true') {
+    return '/'
   }
-  return {
-    name: 'gallery-sync',
-    buildStart() {
-      run()
-    },
-    configureServer(server) {
-      const galleryDir = path.join(projectRoot, 'public', 'gallery')
-      server.watcher.add(galleryDir)
-      let timer: ReturnType<typeof setTimeout> | null = null
-      const shouldIgnoreGalleryEvent = (file: string | undefined) => {
-        if (!file) return false
-        const base = path.basename(file)
-        if (base === '.DS_Store' || base === 'Thumbs.db') return true
-        if (/^README\.md$/i.test(base)) return true
-        return false
-      }
-      const schedule = (file?: string) => {
-        if (shouldIgnoreGalleryEvent(file)) return
-        if (timer) clearTimeout(timer)
-        timer = setTimeout(() => {
-          try {
-            run()
-          } catch (e) {
-            console.error('[gallery-sync]', e)
-          }
-        }, 500)
-      }
-      server.watcher.on('add', (f) => schedule(f))
-      server.watcher.on('change', (f) => schedule(f))
-      server.watcher.on('unlink', (f) => schedule(f))
-    },
+  const full = (process.env.GITHUB_REPOSITORY ?? '').trim()
+  const parts = full.split('/').filter(Boolean)
+  if (parts.length < 2) {
+    return '/'
   }
+  const repo = parts[1]
+  if (!repo) {
+    return '/'
+  }
+  if (repo.endsWith('.github.io')) {
+    return '/'
+  }
+  return `/${repo}/`
 }
 
 export default defineConfig({
+  base: resolveViteBase(),
   plugins: [
     // The React and Tailwind plugins are both required for Make, even if
     // Tailwind is not being actively used – do not remove them
     react(),
     tailwindcss(),
-    gallerySyncPlugin(),
   ],
   resolve: {
     alias: {

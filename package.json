@@ -7,7 +7,6 @@
     "build": "vite build",
     "dev": "vite",
     "typecheck": "tsc --noEmit",
-    "gallery:sync": "node scripts/sync-gallery-from-disk.mjs",
     "gallery:placeholders": "node scripts/seed-gallery-placeholders.mjs"
   },
   "dependencies": {
