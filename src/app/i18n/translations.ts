@@ -1,9 +1,11 @@
 import type { GalleryCategory } from "../context/WorksCategoryContext";
+import portfolioContentJson from "../data/portfolio-content.json";
 import { slugFromProjectKey } from "../utils/galleryProjectKey";
 
 /**
  * **Single source of truth for all user-visible UI strings** (nav, layout, gallery chrome,
  * About/Contact, aria labels, locale switcher labels, portfolio project copy).
+ * English project titles/descriptions/years: `src/app/data/portfolio-content.json`.
  * Project list and file paths come from `gallery-manifest.json` + `public/` (see `galleryData.ts`).
  */
 export type Locale = "en" | "de" | "tr";
@@ -93,71 +95,30 @@ export type TranslationMessages = {
 };
 
 /**
- * Keys must match `gallery-manifest.json` projects (`categoryFolder/slug`).
- * Same keys required in EN, DE, and TR.
+ * English project copy: edit `src/app/data/portfolio-content.json` only (keys = `categoryFolder/slug`).
+ * Same keys required in DE and TR objects below.
  */
-const portfolioProjectsEn: Record<string, PortfolioProjectCopy> = {
-  "interactive-vr/Cozy Experience": {
-    title: "Cozy Experience",
-    description:
-      "An intimate interactive study of comfort, scale, and presence—built as a small, warm space you can explore.",
-    year: "2026",
-  },
-  "interactive-vr/VR Experience": {
-    title: "VR Experience",
-    description:
-      "Immersive VR work combining spatial layout, real-time media, and guided focus across a sequence of scenes.",
-    year: "2026",
-  },
-  "motion/Jazz Fest Commercial": {
-    title: "Jazz Fest Commercial",
-    description:
-      "Commercial motion piece for a jazz festival—rhythm, typography, and picture cut to music and brand tone.",
-    year: "2025",
-  },
-  "motion/Spotify Canvas Design": {
-    title: "Spotify Canvas Design",
-    description:
-      "Data as choreography and brand-forward motion—a hero piece for launch and festival screens.",
-    year: "2025",
-  },
-  "campaigns/JusteDebout": {
-    title: "Juste Debout",
-    description:
-      "Campaign and motion work for Juste Debout—rhythm, framing, and social-ready visuals built for the stage.",
-    year: "2025",
-  },
-  "campaigns/Western Union": {
-    title: "Western Union",
-    description:
-      "I worked on commercial projects for Western Union, producing animated promotional materials using Adobe After Effects. The content was developed in multiple languages including Greek, Georgian, Russian, and English, to effectively reach and engage diverse international audiences.",
-    year: "2019",
-  },
-  "3d-archive/Emberfall-Environment": {
-    title: "Realistic Short Film",
-    description:
-      "End-to-end development of a large-scale, fantasy-inspired library environment for a realistic short film—at the intersection of design, storytelling, and real-time production. Set in the Emberfall Kingdom; the work covered environment assets, layout, optimized UV workflows, and the final trailer including video editing and sound design. Texturing, PBR materials, and the princess character were created by other artists.",
-    year: "2024",
-  },
-  "3d-archive/FB": {
-    title: "Fashion Battle",
-    description:
-      "3D fashion visuals—environment, lighting, and cinematic presentation for a competitive fashion context.",
-    year: "2025",
-  },
-  "2d-archive/Illustrations": {
-    title: "Illustrations",
-    description:
-      "Selected illustration work—series, composition, color, and narrative tone across print and digital.",
-    year: "2025",
-  },
-  "2d-archive/Psychodelic Magazine": {
-    title: "Psychedelic Magazine",
-    description:
-      "Editorial and magazine spreads—layout, typography, and image treatment for a bold print identity.",
-    year: "2025",
-  },
-};
+function normalizePortfolioContentJson(
+  raw: unknown,
+): Record<string, PortfolioProjectCopy> {
+  if (typeof raw !== "object" || raw === null) return {};
+  const out: Record<string, PortfolioProjectCopy> = {};
+  for (const [key, v] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof v !== "object" || v === null) {
+      out[key] = { title: "", description: "", year: "" };
+      continue;
+    }
+    const o = v as Record<string, unknown>;
+    out[key] = {
+      title: typeof o.title === "string" ? o.title : "",
+      description: typeof o.description === "string" ? o.description : "",
+      year: typeof o.year === "string" ? o.year : "",
+    };
+  }
+  return out;
+}
+
+const portfolioContent = normalizePortfolioContentJson(portfolioContentJson);
 
 const portfolioProjectsDe: Record<string, PortfolioProjectCopy> = {
   "interactive-vr/Cozy Experience": {
@@ -377,7 +338,7 @@ const en: TranslationMessages = {
       "For now, email is the quickest way to get in touch. Use Email Me above.",
   },
   portfolio: {
-    projects: portfolioProjectsEn,
+    projects: portfolioContent,
   },
 };
 
