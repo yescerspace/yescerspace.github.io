@@ -26,6 +26,8 @@ export type PortfolioProjectCopy = {
   title: string;
   description: string;
   year: string;
+  /** Comma-separated or free-text tool names (e.g. "Adobe", "Blender, Unity"). */
+  tools: string;
 };
 
 export type TranslationMessages = {
@@ -57,6 +59,8 @@ export type TranslationMessages = {
   gallery: {
     exploreHint: string;
     modalYear: string;
+    /** Label above the tools line in the project detail modal (shown with a trailing colon in UI). */
+    modalToolsLabel: string;
     /** Title when no `portfolio.projects[projectKey]` entry exists (never show raw `projectKey`). */
     modalProjectFallback: string;
     /** Year line when entry is missing or `year` is empty in copy (never use manifest). */
@@ -104,7 +108,7 @@ function normalizePortfolioContentJson(
   const out: Record<string, PortfolioProjectCopy> = {};
   for (const [key, v] of Object.entries(raw as Record<string, unknown>)) {
     if (typeof v !== "object" || v === null) {
-      out[key] = { title: "", description: "", year: "" };
+      out[key] = { title: "", description: "", year: "", tools: "" };
       continue;
     }
     const o = v as Record<string, unknown>;
@@ -112,6 +116,7 @@ function normalizePortfolioContentJson(
       title: typeof o.title === "string" ? o.title : "",
       description: typeof o.description === "string" ? o.description : "",
       year: typeof o.year === "string" ? o.year : "",
+      tools: typeof o.tools === "string" ? o.tools : "",
     };
   }
   return out;
@@ -177,6 +182,7 @@ const en: TranslationMessages = {
   gallery: {
     exploreHint: "Drag to explore and choose",
     modalYear: "Year",
+    modalToolsLabel: "Tools",
     modalProjectFallback: "Project",
     modalYearFallback: "—",
     backToGallery: "Back to gallery",
@@ -256,6 +262,7 @@ const de: TranslationMessages = {
   gallery: {
     exploreHint: "Ziehen zum Erkunden und Auswählen",
     modalYear: "Jahr",
+    modalToolsLabel: "Tools",
     modalProjectFallback: "Projekt",
     modalYearFallback: "—",
     backToGallery: "Zurück zur Galerie",
@@ -335,6 +342,7 @@ const tr: TranslationMessages = {
   gallery: {
     exploreHint: "Keşfetmek ve seçmek için sürükleyin",
     modalYear: "Yıl",
+    modalToolsLabel: "Araçlar",
     modalProjectFallback: "Proje",
     modalYearFallback: "—",
     backToGallery: "Galeriye dön",
@@ -448,6 +456,7 @@ export function portfolioProjectCopy(
       title: titleOut,
       description: p.description ?? "",
       year: yearOut,
+      tools: (p.tools ?? "").trim(),
     };
   }
   if (import.meta.env?.DEV) {
@@ -483,6 +492,7 @@ export function portfolioProjectCopy(
     title: slug,
     description: "",
     year: yearDash,
+    tools: "",
   };
 }
 

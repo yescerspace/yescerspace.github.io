@@ -50,31 +50,51 @@ export function firstDetailVideoUrl(urls: readonly string[]): string | null {
   return null;
 }
 
-let lastPrefetchedDetailVideo: string | null = null;
+let lastDetailPreloadKey: string | null = null;
+
+const DETAIL_PRELOAD_MAX = 4;
 
 /**
- * Hint the browser to fetch the first detail video early (`<link rel="preload" as="video">`).
- * Call on card press / before opening the modal; noop if there is no detail video.
+ * Hint the browser to fetch the first few detail assets early (`<link rel="preload">`).
+ * Preloads images as `image` and videos as `video` — call on pointer down / before opening the modal.
  */
-export function prefetchFirstDetailVideo(urls: readonly string[]): void {
+export function prefetchDetailModalMedia(urls: readonly string[]): void {
   if (typeof document === "undefined") return;
-  const raw = firstDetailVideoUrl(urls);
-  if (!raw) return;
-  if (lastPrefetchedDetailVideo === raw) return;
-  lastPrefetchedDetailVideo = raw;
+  const detail = detailPageMediaUrls(urls);
+  const key = detail.slice(0, DETAIL_PRELOAD_MAX).join("|");
+  if (key.length === 0) return;
+  if (key === lastDetailPreloadKey) return;
+  lastDetailPreloadKey = key;
+
   document
     .querySelectorAll("link[data-gallery-detail-preload]")
     .forEach((el) => el.remove());
-  const link = document.createElement("link");
-  link.rel = "preload";
-  link.as = "video";
-  link.href = raw;
-  link.setAttribute("data-gallery-detail-preload", "1");
-  document.head.appendChild(link);
+
+  for (const raw of detail.slice(0, DETAIL_PRELOAD_MAX)) {
+    const u = raw?.trim();
+    if (!u) continue;
+    const link = document.createElement("link");
+    link.rel = "preload";
+    link.href = u;
+    link.setAttribute("data-gallery-detail-preload", "1");
+    if (isVideoUrl(u)) {
+      link.as = "video";
+    } else if (isRasterImageUrl(u)) {
+      link.as = "image";
+    } else {
+      continue;
+    }
+    document.head.appendChild(link);
+  }
+}
+
+/** @deprecated Use {@link prefetchDetailModalMedia} — kept for call sites. */
+export function prefetchFirstDetailVideo(urls: readonly string[]): void {
+  prefetchDetailModalMedia(urls);
 }
 
 export function clearGalleryDetailVideoPreload(): void {
-  lastPrefetchedDetailVideo = null;
+  lastDetailPreloadKey = null;
   if (typeof document === "undefined") return;
   document
     .querySelectorAll("link[data-gallery-detail-preload]")

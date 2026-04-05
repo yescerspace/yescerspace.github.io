@@ -36,7 +36,7 @@ import {
   firstDetailVideoUrl,
   galleryFilenameIndex,
   isVideoUrl,
-  prefetchFirstDetailVideo,
+  prefetchDetailModalMedia,
   primaryGalleryTextureUrl,
 } from "../utils/galleryMedia";
 
@@ -917,7 +917,7 @@ function GalleryCardMesh({
         onPointerDown={(e: ThreeEvent<PointerEvent>) => {
           e.stopPropagation();
           onSoftGalleryHint();
-          prefetchFirstDetailVideo(image.images);
+          prefetchDetailModalMedia(image.images);
           pointerDown.current = { x: e.clientX, y: e.clientY };
         }}
         onPointerUp={(e: ThreeEvent<PointerEvent>) => {
@@ -1189,10 +1189,13 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
     });
   }, []);
 
-  const detailMediaAllReady = useMemo(() => {
-    if (detailUrls.length === 0) return true;
-    return detailUrls.every((u) => failed[u] || readyUrls.has(u));
-  }, [detailUrls, failed, readyUrls]);
+  const readyUrlsKey = useMemo(
+    () =>
+      [...readyUrls].sort().join("\0") +
+      "|" +
+      Object.keys(failed).sort().join("\0"),
+    [readyUrls, failed],
+  );
 
   const srcFor = useCallback(
     (url: string) =>
@@ -1256,10 +1259,9 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
     syncPlayback();
   }, [detailUrls, failed, syncPlayback]);
 
-  useLayoutEffect(() => {
-    if (!detailMediaAllReady) return;
+  useEffect(() => {
     schedulePlaybackSync();
-  }, [detailMediaAllReady, schedulePlaybackSync]);
+  }, [readyUrlsKey, detailUrlsKey, schedulePlaybackSync]);
 
   /** No `1+` media — still show hero (`0.*`) so the modal is never empty. */
   if (detailUrls.length === 0) {
@@ -1290,18 +1292,11 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
   return (
     <div
       ref={setScrollRef}
-      className="max-h-[min(70vh,580px)] w-full min-w-0 overflow-y-auto overscroll-y-contain bg-transparent [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar]:w-0"
+      className="max-h-[min(70vh,580px)] w-full min-w-0 overflow-y-auto overscroll-y-contain bg-app-shell-bg/35 [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar]:w-0"
       role="region"
       aria-label={heroAlt}
     >
-      <div
-        className={`flex w-full flex-col gap-8 transition-opacity duration-300 ease-out motion-reduce:transition-none ${
-          detailMediaAllReady
-            ? "opacity-100"
-            : "pointer-events-none opacity-0"
-        }`}
-        aria-busy={!detailMediaAllReady}
-      >
+      <div className="flex w-full flex-col gap-8">
         {detailUrls.map((url, i) => {
           const src = srcFor(url);
           const indexLabel = galleryFilenameIndex(url);
@@ -1316,7 +1311,7 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
               ref={(el) => {
                 itemRefs.current[i] = el;
               }}
-              className="w-full shrink-0"
+              className="w-full min-h-[4rem] shrink-0"
             >
               {showVideo ? (
                 <video
@@ -1327,15 +1322,18 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
                   controls
                   controlsList="nodownload"
                   playsInline
-                  preload="auto"
+                  preload={isPrimaryDetailVideo ? "auto" : "metadata"}
                   {...(isPrimaryDetailVideo
                     ? ({ fetchPriority: "high" } as VideoHTMLAttributes<HTMLVideoElement>)
                     : ({
-                        fetchPriority: "auto",
+                        fetchPriority: "low",
                       } as VideoHTMLAttributes<HTMLVideoElement>))}
-                  className="block h-auto max-w-full w-full"
+                  className="block h-auto max-w-full w-full bg-black/20"
                   aria-label={label}
-                  onLoadedMetadata={schedulePlaybackSync}
+                  onLoadedMetadata={() => {
+                    markDetailMediaReady(url);
+                    schedulePlaybackSync();
+                  }}
                   onLoadedData={(e) => {
                     const v = e.currentTarget;
                     if (v.dataset.portfolioDefaultVolume !== "1") {
@@ -1359,11 +1357,11 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
                 <img
                   src={src}
                   alt={label}
-                  className="block h-auto max-w-full w-full select-none"
+                  className="block h-auto max-w-full w-full select-none bg-black/10"
                   draggable={false}
-                  loading="eager"
+                  loading={i <= 1 ? "eager" : "lazy"}
                   decoding="async"
-                  fetchPriority={i === 0 ? "high" : "auto"}
+                  fetchPriority={i === 0 ? "high" : i === 1 ? "high" : "low"}
                   onLoad={() => {
                     markDetailMediaReady(url);
                   }}
@@ -1475,7 +1473,7 @@ export function Gallery3D({
 
   const handlePick = useCallback(
     (image: GalleryImage) => {
-      prefetchFirstDetailVideo(image.images);
+      prefetchDetailModalMedia(image.images);
       setSelectedImage(image);
       onOpenImage?.(image);
     },
@@ -1682,6 +1680,17 @@ export function Gallery3D({
                     {selectedPortfolioCopy.description}
                   </p>
                 </div>
+
+                {selectedPortfolioCopy.tools.trim() !== "" ? (
+                  <div className="border-t border-gray-100/80 pt-4">
+                    <span className="text-xs uppercase tracking-[0.18em] text-gray-400">
+                      {galleryCopy.modalToolsLabel}:
+                    </span>
+                    <p className="mt-1.5 text-[0.95rem] leading-snug text-gray-800">
+                      {selectedPortfolioCopy.tools}
+                    </p>
+                  </div>
+                ) : null}
 
                 <div className="flex items-baseline gap-4 border-t border-gray-100/80 pt-4">
                   <span className="text-xs uppercase tracking-[0.18em] text-gray-400">

@@ -2,51 +2,61 @@
   "interactive-vr/Cozy Experience": {
     "title": "Cozy Zen",
     "description": "Cozy Zen is my thesis project that explores cozy game experiences through the concept of a Zen garden. The goal was to create a calming yet engaging interactive game environment that offers players a sense of relaxation and presence. Within a very limited timeframe, I independently developed both the theoretical thesis and a fully playable prototype. I was responsible for the entire production process, including animation, visual design, and game development, bringing the concept to life using Unity and Blender. I also utilized Codex to support the coding process and gameplay implementation. Despite the tight schedule, this project became a highly rewarding and educational journey — from learning programming fundamentals to experimenting with mechanics and refining every detail from concept to playable prototype.",
-    "year": "2025"
+    "year": "2025",
+    "tools": "Adobe"
   },
   "interactive-vr/VR Experience": {
     "title": "VR Experience",
     "description": "Boneheads Raid is an immersive VR work combining spatial layout, real-time media, and guided focus across a sequence of scenes.",
-    "year": "2024"
+    "year": "2024",
+    "tools": "Adobe"
   },
   "motion/Jazz Fest Commercial": {
     "title": "Jazz Fest Commercial",
     "description": "This project was developed as a commercial motion piece for a jazz festival, combining rhythm-based editing, typography, and music-synced visual storytelling aligned with the festival’s brand tone. Beyond motion design, I took an active role in the full visual production process, including preparing the model through makeup styling and directing a professional photoshoot to create high-quality visual assets for the campaign. The final output integrated motion design with photographed material, focusing on rhythm, composition, and brand identity. The project was submitted to a competition and received the “Mansion Award” recognition.",
-    "year": "2019"
+    "year": "2019",
+    "tools": "Adobe"
   },
   "motion/Spotify Canvas Design": {
     "title": "Spotify Canvas Design",
     "description": "Designed the visual identity for the Spotify release of the album “Bulut” which means cloud in English, including the album presentation and accompanying Canvas animations. My work focused on creating short-form motion visuals optimized for Spotify’s Canvas format, combining video editing, motion design, and rhythm-driven visual storytelling to enhance the listening experience. The visuals were designed to complement the mood and atmosphere of the album while maintaining platform-specific constraints and user interaction flow.",
-    "year": "2024"
+    "year": "2024",
+    "tools": "Adobe"
   },
   "campaigns/JusteDebout": {
     "title": "Juste Debout",
     "description": "Campaign and motion work for Juste Debout—rhythm, framing, and social-ready visuals built for the stage.",
-    "year": "2026"
+    "year": "2026",
+    "tools": "Adobe"
   },
   "campaigns/Western Union": {
     "title": "Western Union",
     "description": "Worked on commercial projects for Western Union, producing animated promotional materials using Adobe After Effects. The content was developed in multiple languages including Greek, Georgian, Russian, and English, to effectively reach and engage diverse international audiences.",
-    "year": "2019"
+    "year": "2019",
+    "tools": "Adobe"
   },
   "3d-archive/Emberfall-Environment": {
     "title": "Real-Time Cinematic Environment Production",
     "description": "Responsible for the end-to-end development of a large-scale, fantasy-inspired library environment for a realistic short film. The story takes place in the Emberfall Kingdom, where a princess narrates a tale to the audience within the library setting. The environment was designed to support this narrative moment, emphasizing atmosphere, scale, and storytelling through space. I designed and modeled all environment props from scratch, along with creating clean and optimized UV maps to ensure a high-quality real-time workflow. I also developed the overall environment layout and spatial composition, shaping a grand, immersive library space with intricate architectural details. Beyond environment production, I edited the final trailer, handling both video editing and sound design to enhance the cinematic tone and emotional impact of the project. Texturing and PBR material creation, the princess character, including her animation and textures, was developed by other artists.",
-    "year": "2024"
+    "year": "2024",
+    "tools": "Adobe"
   },
   "3d-archive/FB": {
     "title": "Character Customization & Animation",
     "description": "Responsible for the creation of 3D character costumes and in-game visual assets, combining modeling, UV mapping, weight painting, and texturing within a production pipeline. I designed and developed character clothing and accessories, including full 3D costume construction in Blender, followed by UV unwrapping, mesh optimization, and skin-weight painting for proper in-game deformation. Texturing was completed in Substance 3D Painter, with a focus on material consistency and visual clarity. In addition, I contributed to the production of 3D and 2D assets across more than 30 mobile game levels and over 100 characters, supporting a large-scale content pipeline. My responsibilities also included the creation of illustrations, textures, UI visual components, props, and interactive elements, ensuring visual coherence across different game systems. I played a key role in the production of Fashion Battle (120M+ downloads), contributing to concept development, 3D modeling, texturing, and UI-related visual design. Beyond production work, I actively participated in playtests, providing feedback on gameplay mechanics, visual design, and user experience. I also worked closely with development, design, and production teams to ensure quality control, consistency, and smooth integration of assets into the final product.",
-    "year": "2021-2024"
+    "year": "2021-2024",
+    "tools": "Adobe"
   },
   "2d-archive/Illustrations": {
     "title": "Illustrations",
     "description": "Selected illustration work—series, composition, color, and narrative tone across print and digital.",
-    "year": "2019-2023"
+    "year": "2019-2023",
+    "tools": "Adobe"
   },
   "2d-archive/Psychodelic Magazine": {
     "title": "Psychedelic Magazine",
     "description": "Editorial and magazine spreads—layout, typography, and image treatment for a bold print identity.",
-    "year": "2019"
+    "year": "2019",
+    "tools": "Adobe"
   }
 }
