@@ -134,7 +134,7 @@ const portfolioProjectsEn: Record<string, PortfolioProjectCopy> = {
     year: "2019",
   },
   "3d-archive/Emberfall-Environment": {
-    title: "Realistic Short Film",
+    title: "Short Animation Film",
     description:
       "End-to-end development of a large-scale, fantasy-inspired library environment for a realistic short film—at the intersection of design, storytelling, and real-time production. Set in the Emberfall Kingdom; the work covered environment assets, layout, optimized UV workflows, and the final trailer including video editing and sound design. Texturing, PBR materials, and the princess character were created by other artists.",
     year: "2024",
