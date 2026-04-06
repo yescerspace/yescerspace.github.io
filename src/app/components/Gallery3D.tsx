@@ -2017,7 +2017,7 @@ export function Gallery3D({
         </div>
 
         <p
-          className="pointer-events-none w-full max-w-lg shrink-0 self-center px-4 pb-1 pt-2 text-center text-[11px] font-medium uppercase leading-snug tracking-[0.18em] text-muted-foreground sm:pb-1.5"
+          className="pointer-events-none w-full max-w-lg shrink-0 self-center px-4 pb-1 pt-2 text-center text-[11px] font-medium italic leading-snug tracking-[0.12em] text-muted-foreground sm:pb-1.5"
           aria-live="polite"
         >
           {galleryCopy.exploreHint}
