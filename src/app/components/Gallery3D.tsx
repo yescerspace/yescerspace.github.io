@@ -41,9 +41,6 @@ import {
   primaryGalleryTextureUrl,
 } from "../utils/galleryMedia";
 
-/** Gallery hint: full visibility, then fade to soft after this (ms) on load */
-const EXPLORE_HINT_FLASH_MS = 2000;
-
 /** Detail modal: allow first-row video at top; others only when vertically centered in the scroller. */
 const DETAIL_FIRST_VIDEO_SCROLL_TOP_MAX = 56;
 const DETAIL_VIDEO_CENTER_BAND_FRAC = 0.22;
@@ -1847,31 +1844,7 @@ export function Gallery3D({
     logGalleryHeroLoadErrorsInDev(images);
   }, [images]);
 
-  /** Full-opacity “flash”; false = resting soft style (low opacity + nudge) */
-  const [exploreHintProminent, setExploreHintProminent] = useState(true);
-  const exploreHintFlashGenerationRef = useRef(0);
-
-  /** Softer hint immediately when the user drags the gallery (also invalidates pending fade timer). */
-  const softenExploreHintFromInteraction = useCallback(() => {
-    exploreHintFlashGenerationRef.current += 1;
-    setExploreHintProminent(false);
-  }, []);
-
-  useEffect(() => {
-    exploreHintFlashGenerationRef.current += 1;
-    const gen = exploreHintFlashGenerationRef.current;
-
-    setExploreHintProminent(true);
-    const id = window.setTimeout(() => {
-      if (gen === exploreHintFlashGenerationRef.current) {
-        setExploreHintProminent(false);
-      }
-    }, EXPLORE_HINT_FLASH_MS);
-
-    return () => {
-      window.clearTimeout(id);
-    };
-  }, [images.length]);
+  const noopSoftGalleryHint = useCallback(() => {}, []);
 
   const orbitControlsRef = useRef<StdOrbitControls | null>(null);
 
@@ -1987,8 +1960,6 @@ export function Gallery3D({
             backgroundImage: "var(--app-shell-gradient)",
             backgroundAttachment: "fixed",
           }}
-          onWheelCapture={softenExploreHintFromInteraction}
-          onPointerDownCapture={softenExploreHintFromInteraction}
         >
           <Canvas
             className="absolute inset-0 h-full w-full touch-none [transform:translateZ(0)]"
@@ -2040,17 +2011,13 @@ export function Gallery3D({
               setHoveredIndex={setHoveredIndex}
               modalOpen={detailModalOpen}
               onPick={handlePick}
-              onSoftGalleryHint={softenExploreHintFromInteraction}
+              onSoftGalleryHint={noopSoftGalleryHint}
             />
           </Canvas>
         </div>
 
         <p
-          className={`pointer-events-none w-full max-w-lg shrink-0 self-center px-4 pb-1 pt-2 text-center text-[11px] uppercase leading-snug tracking-[0.18em] transition-[opacity,transform,filter] duration-500 ease-out motion-reduce:transition-none sm:pb-1.5 ${
-            exploreHintProminent
-              ? "translate-y-0 text-muted-foreground opacity-100 [filter:none]"
-              : "translate-y-1 text-muted-foreground/75 opacity-[0.28] [filter:blur(0.35px)] motion-reduce:translate-y-0"
-          }`}
+          className="pointer-events-none w-full max-w-lg shrink-0 self-center px-4 pb-1 pt-2 text-center text-[11px] font-medium uppercase leading-snug tracking-[0.18em] text-muted-foreground sm:pb-1.5"
           aria-live="polite"
         >
           {galleryCopy.exploreHint}

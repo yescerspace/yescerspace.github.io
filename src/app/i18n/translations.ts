@@ -179,7 +179,7 @@ const en: TranslationMessages = {
     ...categoryEn,
   },
   gallery: {
-    exploreHint: "Drag to explore and choose",
+    exploreHint: "DRAG ● SCROLL ● CLICK",
     modalYear: "Year",
     modalToolsLabel: "Tools",
     modalProjectFallback: "Project",
@@ -258,7 +258,7 @@ const de: TranslationMessages = {
     "2D Archive": "2D-Archiv",
   },
   gallery: {
-    exploreHint: "Ziehen zum Erkunden und Auswählen",
+    exploreHint: "ZIEHEN ● SCROLLEN ● KLICKEN",
     modalYear: "Jahr",
     modalToolsLabel: "Tools",
     modalProjectFallback: "Projekt",
@@ -337,7 +337,7 @@ const tr: TranslationMessages = {
     "2D Archive": "2D arşiv",
   },
   gallery: {
-    exploreHint: "Keşfetmek ve seçmek için sürükleyin",
+    exploreHint: "SÜRÜKLE ● KAYDIR ● TIKLA",
     modalYear: "Yıl",
     modalToolsLabel: "Araçlar",
     modalProjectFallback: "Proje",
