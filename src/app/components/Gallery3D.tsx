@@ -866,6 +866,24 @@ function ZoomFrameSync({
 
 const PLACEHOLDER_GRAY = new THREE.Color(0x5c5c66);
 
+/** Soft disc edge: radial alpha in fragment shader (same UVs as the map). */
+const DISC_FEATHER_MAP_FRAGMENT_PATCH = `#include <map_fragment>
+#ifdef USE_MAP
+{
+	vec2 _hub = vMapUv - vec2(0.5);
+	float _rr = length(_hub) * 2.0;
+	diffuseColor.a *= 1.0 - smoothstep(0.48, 0.995, _rr);
+}
+#else
+#ifdef USE_UV
+{
+	vec2 _hub = vUv - vec2(0.5);
+	float _rr = length(_hub) * 2.0;
+	diffuseColor.a *= 1.0 - smoothstep(0.48, 0.995, _rr);
+}
+#endif
+#endif`;
+
 function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
   useEffect(() => {
@@ -989,14 +1007,22 @@ function GalleryCardMesh({
   const circleMaterial = useMemo(() => {
     if (!satelliteFloat) return null;
     const hasMap = Boolean(texture);
-    return new THREE.MeshBasicMaterial({
+    const mat = new THREE.MeshBasicMaterial({
       map: texture ?? undefined,
       color: hasMap ? new THREE.Color(0.96, 0.96, 0.98) : PLACEHOLDER_GRAY,
-      transparent: false,
+      transparent: true,
       opacity: 1,
-      depthWrite: true,
+      depthWrite: false,
       side: THREE.DoubleSide,
     });
+    mat.customProgramCacheKey = () => "galleryDiscFeather:v1";
+    mat.onBeforeCompile = (shader) => {
+      shader.fragmentShader = shader.fragmentShader.replace(
+        "#include <map_fragment>",
+        DISC_FEATHER_MAP_FRAGMENT_PATCH,
+      );
+    };
+    return mat;
   }, [texture, satelliteFloat]);
 
   const boxMaterials = useMemo(() => {
@@ -1324,8 +1350,8 @@ function GalleryCardMesh({
     if (satelliteFloat && !Array.isArray(mats)) {
       const m = mats as THREE.MeshBasicMaterial;
       m.opacity = op;
-      m.transparent = op < 0.998;
-      m.depthWrite = op > 0.92;
+      m.transparent = true;
+      m.depthWrite = false;
     } else {
       const list = Array.isArray(mats) ? mats : [mats];
       /** Box face order: +x, −x, +y, −y, +z (front), −z (back) */
