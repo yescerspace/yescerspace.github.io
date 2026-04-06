@@ -310,7 +310,7 @@ function useResilientTexture(imageUrl: string | undefined): THREE.Texture | null
 /** Arc length (world units) between adjacent cards — lower = denser ring, more overlap */
 const ORBIT_CARD_SPACING = 1.12;
 /** Minimum shell radius for the Fibonacci cloud (All + filtered categories). */
-const ORBIT_MIN_RADIUS_ALL = 3.2;
+const ORBIT_MIN_RADIUS_ALL = 3.55;
 /** When exactly two pieces are on the ring, enforce a wider radius so they do not overlap */
 const ORBIT_TWO_ITEM_MIN_RADIUS = 0.78;
 /**
@@ -327,19 +327,48 @@ const FILTERED_RING_SPACING_MULT_4PLUS = 1.52;
  * Cloud gallery: circular covers on a Fibonacci shell + drift.
  * Raised well above the original 0.46 so covers read clearly on screen.
  */
-const ALL_CLOUD_LAYOUT_SCALE = 0.82;
+const ALL_CLOUD_LAYOUT_SCALE = 0.94;
+/** Son görsel boyutu (~%10 küçültme). */
+const GALLERY_COVER_GLOBAL_SCALE = 0.9;
+/**
+ * Tek kategori + tam 2 veya 4 öğe: daha küçük kabuk (kameraya yakın), daha büyük yuvarlak kapaklar.
+ */
+const SPARSE_FILTERED_RING_SHELL_SCALE = 0.58;
+const SPARSE_FILTERED_RING_MIN = 1.55;
+const SPARSE_FILTERED_EXTRA_CARD_SCALE = 1.2;
+const SPARSE_FILTERED_ORBIT_DEFAULT_T = 0.36;
 /** Extra radius for orbit / FOV framing so the 3D shell doesn’t clip. */
 const ALL_CLOUD_FRAMING_RADIUS_MULT = 1.52;
-/** Organic motion: world units drift on each axis. */
-const ALL_CLOUD_DRIFT_AMP = 0.1;
+/** Organic motion — düşük amp + yavaş frekans; radyal bileşen ayrıca sönümlenir. */
+const ALL_CLOUD_DRIFT_AMP = 0.062;
+/** Uzun periyotlu yörünge süzülmesi. */
+const ALL_CLOUD_GLIDE_AMP = 0.052;
+/** Radial drift’in ne kadarı kesilsin (0 = hepsi tangential, 1 = olduğu gibi). */
+const ALL_CLOUD_DRIFT_RADIAL_DAMP = 0.72;
 /** Subtle tilt wobble on the mesh (radians). */
-const ALL_CLOUD_WOBBLE_AMP = 0.07;
+const ALL_CLOUD_WOBBLE_AMP = 0.038;
 /** “All” view: circular disc — segment count for smooth outline. */
 const ALL_CLOUD_CIRCLE_SEGMENTS = 72;
-/** Distance-based scale: near camera / mid / far shell (orbit drag updates naturally). */
-const ALL_CLOUD_DEPTH_NEAR_SCALE = 1.52;
-const ALL_CLOUD_DEPTH_MID_SCALE = 0.98;
-const ALL_CLOUD_DEPTH_FAR_SCALE = 0.68;
+/**
+ * Distance-based scale — dar aralık; drift + kamera ile ani küçülmeyi azaltır.
+ */
+const ALL_CLOUD_DEPTH_NEAR_SCALE = 1.22;
+const ALL_CLOUD_DEPTH_MID_SCALE = 1.0;
+const ALL_CLOUD_DEPTH_FAR_SCALE = 0.94;
+/** depthScale hedefini takip hızı (düşük = daha yumuşak). */
+const ALL_CLOUD_DEPTH_SMOOTH_SPEED = 5.2;
+/**
+ * Dikey eksene (xz) minimum uzaklık / yerel kabuk yarıçapı — ortada “görünmez gezegen” boşluğu.
+ */
+const CLOUD_HUB_VOID_MIN_XZ_FRAC = 0.38;
+/**
+ * “All”: ortadaki görünmez çekirdeğe daha geniş boşluk (yörünge halkası daha dışta).
+ */
+const CLOUD_HUB_VOID_MIN_XZ_FRAC_ALL = 0.52;
+/**
+ * “All”da öğeleri merkeze göre aynı oranda büyüt — birbirlerinden uzaklaşır; açılar / hash’ler aynı kalır.
+ */
+const ALL_CATEGORY_PAIRWISE_SPREAD = 1.2;
 
 /**
  * Front/back faces match hero artwork aspect: 1080×1080 (square).
@@ -350,7 +379,7 @@ const CARD_FACE_PIXEL_H = 1080;
 const CARD_FACE_ASPECT_W_OVER_H = CARD_FACE_PIXEL_W / CARD_FACE_PIXEL_H;
 
 /** Thin print slab: width × height × depth (`BoxGeometry`; depth keeps edges visible) */
-const CARD_W = 0.82;
+const CARD_W = 0.92;
 const CARD_H = CARD_W / CARD_FACE_ASPECT_W_OVER_H;
 const CARD_D = 0.014;
 /** Deterministic 0–1 hash for per-slot scatter (stable across frames). */
@@ -360,15 +389,55 @@ function slotHash01(slot: number, salt: number): number {
 }
 
 /**
+ * Orta boşluğu koru: xz’de eksene çok yakın noktaları dışarı iter (hepsi aynı yerel R ölçeğine göre).
+ */
+function pushCloudOntoHubRing(
+  slot: number,
+  x: number,
+  yW: number,
+  z: number,
+  R: number,
+  hubVoidFrac: number = CLOUD_HUB_VOID_MIN_XZ_FRAC,
+): [number, number, number] {
+  const rh = Math.hypot(x, z);
+  const rhMin = R * hubVoidFrac;
+  if (rh <= 1e-6) {
+    const ang = slotHash01(slot, 11) * Math.PI * 2;
+    return [Math.cos(ang) * rhMin, yW, Math.sin(ang) * rhMin];
+  }
+  if (rh < rhMin) {
+    const s = rhMin / rh;
+    return [x * s, yW, z * s];
+  }
+  return [x, yW, z];
+}
+
+/**
  * Fibonacci sphere + jitter — loose “planet shell” of thumbnails (not a flat ring).
+ * `allCategoryLayout`: “All” görünümünde daha yatay bant + ekstra rastgele açı.
  */
 function allCloudBasePosition(
   slot: number,
   n: number,
   shellRadius: number,
+  allCategoryLayout: boolean,
 ): [number, number, number] {
   if (n <= 0) return [0, 0, shellRadius];
-  if (n === 1) return [0, 0, shellRadius * 0.94];
+  if (n === 1) {
+    const R = shellRadius * 0.95;
+    const t = slotHash01(0, 11) * Math.PI * 2;
+    const hubFrac = allCategoryLayout
+      ? CLOUD_HUB_VOID_MIN_XZ_FRAC_ALL
+      : CLOUD_HUB_VOID_MIN_XZ_FRAC;
+    const rr = Math.max(R * hubFrac * 1.08, R * 0.52);
+    let x1 = Math.cos(t) * rr;
+    let z1 = Math.sin(t) * rr;
+    if (allCategoryLayout) {
+      x1 *= ALL_CATEGORY_PAIRWISE_SPREAD;
+      z1 *= ALL_CATEGORY_PAIRWISE_SPREAD;
+    }
+    return pushCloudOntoHubRing(0, x1, 0, z1, R, hubFrac);
+  }
   const golden = Math.PI * (3 - Math.sqrt(5));
   const i = slot + 0.5;
   const y = 1 - (i / n) * 2;
@@ -377,31 +446,69 @@ function allCloudBasePosition(
   const h1 = slotHash01(slot, 1);
   const h2 = slotHash01(slot, 2);
   const h3 = slotHash01(slot, 3);
-  const radialJitter = 0.76 + h1 * 0.26;
-  const thetaJitter = (h2 - 0.5) * 0.62;
-  const yJitter = (h3 - 0.5) * 0.32;
-  const t = theta + thetaJitter;
+  const h4 = slotHash01(slot, 4);
+  const h5 = slotHash01(slot, 5);
+  const h6 = slotHash01(slot, 6);
+  /** Kabuktan içe/dışa — “All”da daha geniş radyal + yatay açı. */
+  let radialJitter = 0.52 + h1 * 0.52;
+  let thetaJitter = (h2 - 0.5) * 1.05;
+  let yJitter = (h3 - 0.5) * 0.52;
+  if (allCategoryLayout) {
+    radialJitter = 0.44 + h1 * 0.66;
+    thetaJitter = (h2 - 0.5) * 1.75;
+    yJitter = (h3 - 0.5) * 0.3;
+  }
+  /** Ek yarıçap katmanı (deterministik, slot başına sabit). */
+  let shellRadiusMul = 0.8 + h4 * 0.36;
+  if (allCategoryLayout) {
+    shellRadiusMul = 0.73 + h4 * 0.46;
+  }
+  let t = theta + thetaJitter;
+  if (allCategoryLayout) {
+    t += (h5 - 0.5) * 1.92 + (h6 - 0.5) * 0.95;
+  }
   const yF = clampY + yJitter;
-  const yClamped = THREE.MathUtils.clamp(yF, -0.94, 0.94);
+  const yMax = allCategoryLayout ? 0.64 : 0.965;
+  const yClamped = THREE.MathUtils.clamp(yF, -yMax, yMax);
   const rAdj = Math.sqrt(Math.max(0, 1 - yClamped * yClamped));
-  const x = Math.cos(t) * rAdj * shellRadius * radialJitter;
-  const z = Math.sin(t) * rAdj * shellRadius * radialJitter;
-  const yW = yClamped * shellRadius * radialJitter;
-  return [x, yW, z];
+  const R = shellRadius * radialJitter * shellRadiusMul;
+  let x = Math.cos(t) * rAdj * R;
+  let z = Math.sin(t) * rAdj * R;
+  let yW = yClamped * R;
+  if (allCategoryLayout) {
+    yW *= 0.78;
+    const spread = 0.34 * R;
+    const xz = (slotHash01(slot, 7) - 0.5) * spread;
+    const xz2 = (slotHash01(slot, 8) - 0.5) * spread;
+    const h9 = slotHash01(slot, 9);
+    const h10 = slotHash01(slot, 10);
+    x += xz + (h9 - 0.5) * spread * 0.85;
+    z += xz2 + (h10 - 0.5) * spread * 0.85;
+    const s = ALL_CATEGORY_PAIRWISE_SPREAD;
+    x *= s;
+    yW *= s;
+    z *= s;
+  }
+  const hubFrac = allCategoryLayout
+    ? CLOUD_HUB_VOID_MIN_XZ_FRAC_ALL
+    : CLOUD_HUB_VOID_MIN_XZ_FRAC;
+  return pushCloudOntoHubRing(slot, x, yW, z, R, hubFrac);
 }
 
 /**
- * Three depth bands (near / mid / far) from camera–card distance; smooth as the orbit drags.
- * `orbitMin` / `orbitMax` are the same zoom limits as OrbitControls (world units to target).
+ * Camera–card distance → scale. Smaller `dist` = closer to camera = “front” (1.5).
+ * Breakpoints are fractions of [orbitMin, orbitMax] so the shell keeps a front/mid/back read while zooming.
  */
 function allCloudDistanceScale(
   dist: number,
   orbitMin: number,
   orbitMax: number,
 ): number {
-  const d0 = orbitMin * 0.56;
-  const d1 = THREE.MathUtils.lerp(orbitMin, orbitMax, 0.36);
-  const d2 = orbitMax * 1.16;
+  const span = Math.max(orbitMax - orbitMin, 1e-5);
+  /** Daha geniş bantlar: küçük mesafe oynamalarında ölçek zıplaması azalır. */
+  const d0 = orbitMin + span * 0.2;
+  const d1 = orbitMin + span * 0.52;
+  const d2 = orbitMin + span * 0.82;
   if (dist <= d0) return ALL_CLOUD_DEPTH_NEAR_SCALE;
   if (dist >= d2) return ALL_CLOUD_DEPTH_FAR_SCALE;
   if (dist <= d1) {
@@ -450,7 +557,7 @@ function ringRadiusWorld(
 const HOVER_SCALE = 1.06;
 const HOVER_LIFT = 0.16;
 /** Uniform mesh scale — larger cards; hover/zoom multiply on top (textures unchanged) */
-const CARD_MESH_BASE_SCALE = 1.32;
+const CARD_MESH_BASE_SCALE = 1.45;
 /** Pull ring positions toward center for a tighter circle (after parallax) */
 const RING_RADIAL_COMPACT = 0.8;
 /**
@@ -476,7 +583,7 @@ const CAMERA_FAR = 2000;
 const FRAMING_MARGIN = 0.88;
 
 /** Uniform scale for the carousel group (larger on screen without shrinking orbit min) */
-const GALLERY_GROUP_WORLD_SCALE = 1.15;
+const GALLERY_GROUP_WORLD_SCALE = 1.22;
 
 /** Cinematic FOV at min vs max orbit distance (deg); clamped up by geometry */
 const ADAPTIVE_FOV_AT_MIN_DISTANCE = 50;
@@ -598,9 +705,11 @@ function orbitZoomLimits(
 function baseOrbitCameraDistance(
   ringRadius: number,
   aspect: number,
+  /** 0 = en yakın zoom, 1 = en uzak; sparse kategoride daha düşük tutulur. */
+  distanceT: number = DEFAULT_ORBIT_DISTANCE_T,
 ): number {
   const { min, max } = orbitZoomLimits(ringRadius, aspect);
-  return THREE.MathUtils.lerp(min, max, DEFAULT_ORBIT_DISTANCE_T);
+  return THREE.MathUtils.lerp(min, max, distanceT);
 }
 
 /**
@@ -632,7 +741,13 @@ function defaultViewportAspect(): number {
   return THREE.MathUtils.clamp(window.innerWidth / h, 0.5, 2.5);
 }
 
-function RingCameraSync({ ringRadius }: { ringRadius: number }) {
+function RingCameraSync({
+  ringRadius,
+  defaultDistanceT = DEFAULT_ORBIT_DISTANCE_T,
+}: {
+  ringRadius: number;
+  defaultDistanceT?: number;
+}) {
   const { camera, size } = useThree();
   const aspect = Math.max(
     size.width / Math.max(size.height, 1),
@@ -643,8 +758,13 @@ function RingCameraSync({ ringRadius }: { ringRadius: number }) {
     [ringRadius, aspect],
   );
   const baseD = useMemo(
-    () => THREE.MathUtils.clamp(baseOrbitCameraDistance(ringRadius, aspect), min, max),
-    [ringRadius, aspect, min, max],
+    () =>
+      THREE.MathUtils.clamp(
+        baseOrbitCameraDistance(ringRadius, aspect, defaultDistanceT),
+        min,
+        max,
+      ),
+    [ringRadius, aspect, min, max, defaultDistanceT],
   );
 
   useLayoutEffect(() => {
@@ -766,6 +886,12 @@ interface GallerySceneProps {
   ringRadius: number;
   /** Wider radius for orbit min/max + FOV when “All” cloud needs extra margin. */
   orbitFramingRadius: number;
+  /** Effective `ALL_CLOUD_LAYOUT_SCALE` × optional sparse-category boost. */
+  cardScaleMul: number;
+  /** Initial orbit distance lerp (RingCameraSync + Canvas open frame). */
+  orbitDefaultDistanceT: number;
+  /** “All” seçiliyken daha yatay + rastgele dağılım. */
+  allCategoryLayout: boolean;
   hoveredIndex: number | null;
   setHoveredIndex: (i: number | null) => void;
   modalOpen: boolean;
@@ -783,6 +909,7 @@ function GalleryCardMesh({
   satelliteFloat,
   orbitMinDistance,
   orbitMaxDistance,
+  allCategoryLayout,
   hovered,
   modalOpen,
   onHoverStart,
@@ -798,6 +925,8 @@ function GalleryCardMesh({
   cardScaleMul: number;
   /** Cloud shell: Fibonacci positions + drift (same for “All” and single categories). */
   satelliteFloat: boolean;
+  /** “All” kategorisi: yatay / rastgele dağılım. */
+  allCategoryLayout: boolean;
   /** Orbit zoom limits (world units) — depth scale bands for “All” cloud. */
   orbitMinDistance: number;
   orbitMaxDistance: number;
@@ -995,8 +1124,8 @@ function GalleryCardMesh({
     let wobbleZ = 0;
 
     if (satelliteFloat) {
-      const shellR = radius * (1 + ZOOM_RING_EXPAND * zi) * 1.06;
-      const [cx, cy, cz] = allCloudBasePosition(slot, n, shellR);
+      const shellR = radius * (1 + ZOOM_RING_EXPAND * zi) * 1.1;
+      const [cx, cy, cz] = allCloudBasePosition(slot, n, shellR, allCategoryLayout);
 
       _toCamera.subVectors(
         camera.position,
@@ -1010,7 +1139,7 @@ function GalleryCardMesh({
       let basePx = cx + _toCamera.x * depth;
       let basePy = cy + _toCamera.y * depth * ZOOM_TO_CAM_Y_DAMP;
       let basePz = cz + _toCamera.z * depth;
-      const cloudCompact = 0.91;
+      const cloudCompact = 0.86;
       basePx *= cloudCompact;
       basePy *= cloudCompact;
       basePz *= cloudCompact;
@@ -1020,12 +1149,36 @@ function GalleryCardMesh({
       let driftY = 0;
       let driftZ = 0;
       if (!prefersReducedMotion) {
-        driftX = ALL_CLOUD_DRIFT_AMP * Math.sin(floatT * 0.67 + phase);
+        const slow = floatT * 0.19;
+        const glide = floatT * 0.105;
+        driftX =
+          ALL_CLOUD_DRIFT_AMP * Math.sin(slow + phase) +
+          ALL_CLOUD_GLIDE_AMP * Math.sin(glide + phase * 0.73) +
+          ALL_CLOUD_GLIDE_AMP * 0.42 * Math.cos(glide * 0.88 + phase * 1.07);
         driftY =
-          ALL_CLOUD_DRIFT_AMP * 0.88 * Math.sin(floatT * 0.74 + phase * 1.4);
-        driftZ = ALL_CLOUD_DRIFT_AMP * Math.sin(floatT * 0.59 + phase * 0.85);
-        wobbleX = ALL_CLOUD_WOBBLE_AMP * Math.sin(floatT * 1.05 + phase * 2.1);
-        wobbleZ = ALL_CLOUD_WOBBLE_AMP * Math.sin(floatT * 0.88 + phase * 1.6);
+          ALL_CLOUD_DRIFT_AMP * 0.78 * Math.sin(slow * 1.04 + phase * 1.28) +
+          ALL_CLOUD_GLIDE_AMP * 0.58 * Math.sin(glide * 0.91 + phase * 0.5);
+        driftZ =
+          ALL_CLOUD_DRIFT_AMP * Math.sin(slow * 0.91 + phase * 0.88) +
+          ALL_CLOUD_GLIDE_AMP * Math.cos(glide + phase * 1.12) +
+          ALL_CLOUD_GLIDE_AMP * 0.38 * Math.sin(glide * 0.79 + phase * 0.66);
+        wobbleX = ALL_CLOUD_WOBBLE_AMP * Math.sin(floatT * 0.55 + phase * 2.1);
+        wobbleZ = ALL_CLOUD_WOBBLE_AMP * Math.sin(floatT * 0.48 + phase * 1.6);
+      }
+
+      /** Kabuk üzerinde: drift’in merkeze doğru bileşenini kes (içe/dışa zıplama + ani ölçek azalır). */
+      {
+        const rl = Math.hypot(basePx, basePy, basePz);
+        if (rl > 1e-5) {
+          const qx = basePx / rl;
+          const qy = basePy / rl;
+          const qz = basePz / rl;
+          const rad = driftX * qx + driftY * qy + driftZ * qz;
+          const k = ALL_CLOUD_DRIFT_RADIAL_DAMP;
+          driftX -= rad * qx * k;
+          driftY -= rad * qy * k;
+          driftZ -= rad * qz * k;
+        }
       }
 
       const dx3 = -basePx;
@@ -1131,7 +1284,7 @@ function GalleryCardMesh({
       smoothDepthScaleRef.current = THREE.MathUtils.lerp(
         smoothDepthScaleRef.current,
         targetDepth,
-        Math.min(1, delta * 18),
+        Math.min(1, delta * ALL_CLOUD_DEPTH_SMOOTH_SPEED),
       );
       depthScaleMul = smoothDepthScaleRef.current;
     } else {
@@ -1342,6 +1495,9 @@ function GalleryScene({
   visibleIndices,
   ringRadius,
   orbitFramingRadius,
+  cardScaleMul,
+  orbitDefaultDistanceT,
+  allCategoryLayout,
   hoveredIndex,
   setHoveredIndex,
   modalOpen,
@@ -1350,8 +1506,6 @@ function GalleryScene({
   onSoftGalleryHint,
 }: GallerySceneProps) {
   const visibleCount = visibleIndices.length;
-  /** Same disc + Fibonacci “satellite” motion as “All”, including 1–2 items on a category. */
-  const cardScaleMul = ALL_CLOUD_LAYOUT_SCALE;
   const satelliteFloat = true;
 
   const autoRotateSpeed =
@@ -1393,7 +1547,10 @@ function GalleryScene({
         target={[0, ORBIT_TARGET_Y, 0]}
         onStart={onSoftGalleryHint}
       />
-      <RingCameraSync ringRadius={orbitFramingRadius} />
+      <RingCameraSync
+        ringRadius={orbitFramingRadius}
+        defaultDistanceT={orbitDefaultDistanceT}
+      />
       <AdaptiveFovSync
         ringRadius={orbitFramingRadius}
         minDistance={minZoomDistance}
@@ -1427,6 +1584,7 @@ function GalleryScene({
               satelliteFloat={satelliteFloat}
               orbitMinDistance={minZoomDistance}
               orbitMaxDistance={maxZoomDistance}
+              allCategoryLayout={allCategoryLayout}
               hovered={hoveredIndex === imageIndex}
               modalOpen={modalOpen}
               onHoverStart={() => {
@@ -1749,30 +1907,60 @@ export function Gallery3D({
       .filter((i): i is number => i >= 0);
   }, [images, activeFilter]);
 
-  /**
-   * Same shell math as “All” for every category — do not pass `isFilteredCategory` or
-   * spacing/radius diverge (Motion vs All felt different).
-   */
-  const ringRadius = useMemo(
-    () => ringRadiusWorld(visibleIndices.length, ORBIT_MIN_RADIUS_ALL, false),
-    [visibleIndices.length],
+  /** Tek kategori seçili + tam 2 veya 4 proje: daha büyük disk, daha yakın kamera. */
+  const isSparseFilteredCategory = useMemo(
+    () =>
+      activeFilter !== "All" &&
+      (visibleIndices.length === 2 || visibleIndices.length === 4),
+    [activeFilter, visibleIndices.length],
   );
+
+  const ringRadius = useMemo(() => {
+    const base = ringRadiusWorld(
+      visibleIndices.length,
+      ORBIT_MIN_RADIUS_ALL,
+      false,
+    );
+    if (!isSparseFilteredCategory) return base;
+    return Math.max(
+      base * SPARSE_FILTERED_RING_SHELL_SCALE,
+      SPARSE_FILTERED_RING_MIN,
+    );
+  }, [visibleIndices.length, isSparseFilteredCategory]);
 
   const orbitFramingRadius = useMemo(
     () => ringRadius * ALL_CLOUD_FRAMING_RADIUS_MULT,
     [ringRadius],
   );
 
+  const orbitDefaultDistanceT = useMemo(
+    () =>
+      isSparseFilteredCategory
+        ? SPARSE_FILTERED_ORBIT_DEFAULT_T
+        : DEFAULT_ORBIT_DISTANCE_T,
+    [isSparseFilteredCategory],
+  );
+
+  const galleryCardScaleMul = useMemo(() => {
+    let m = ALL_CLOUD_LAYOUT_SCALE * GALLERY_COVER_GLOBAL_SCALE;
+    if (isSparseFilteredCategory) m *= SPARSE_FILTERED_EXTRA_CARD_SCALE;
+    return m;
+  }, [isSparseFilteredCategory]);
+
   const cameraWorldPos = useMemo((): [number, number, number] => {
     const aspect = defaultViewportAspect();
     const { min, max } = orbitZoomLimits(orbitFramingRadius, aspect);
     const D = THREE.MathUtils.clamp(
-      baseOrbitCameraDistance(orbitFramingRadius, aspect),
+      baseOrbitCameraDistance(
+        orbitFramingRadius,
+        aspect,
+        orbitDefaultDistanceT,
+      ),
       min,
       max,
     );
     return cameraTupleForOrbitDistance(D);
-  }, [orbitFramingRadius]);
+  }, [orbitFramingRadius, orbitDefaultDistanceT]);
 
   const closeModal = useCallback(() => {
     setSelectedImage(null);
@@ -1887,6 +2075,9 @@ export function Gallery3D({
               visibleIndices={visibleIndices}
               ringRadius={ringRadius}
               orbitFramingRadius={orbitFramingRadius}
+              cardScaleMul={galleryCardScaleMul}
+              orbitDefaultDistanceT={orbitDefaultDistanceT}
+              allCategoryLayout={activeFilter === "All"}
               hoveredIndex={hoveredIndex}
               setHoveredIndex={setHoveredIndex}
               modalOpen={detailModalOpen}
