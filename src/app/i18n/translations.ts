@@ -15,6 +15,16 @@ export type Locale = "en" | "de" | "tr";
 /** Display and persistence order: EN → DE → TR */
 export const LOCALES: Locale[] = ["en", "de", "tr"];
 
+/**
+ * Short codes for the language switcher only — always EN / DE / TR (never localized),
+ * so the three options stay unambiguous regardless of the active UI language.
+ */
+export const LOCALE_DISPLAY_LABELS: Record<Locale, string> = {
+  en: "EN",
+  de: "DE",
+  tr: "TR",
+};
+
 export const defaultLocale: Locale = "en";
 
 export const LOCALE_STORAGE_KEY = "portfolio-locale";
@@ -43,8 +53,6 @@ export type TranslationMessages = {
     workCategoriesNavigation: string;
     languageSwitcher: string;
   };
-  /** Short labels for the locale switcher (EN / DE / TR). */
-  localeLabels: Record<Locale, string>;
   nav: {
     gallery: string;
     about: string;
@@ -157,11 +165,6 @@ const en: TranslationMessages = {
     workCategoriesNavigation: "Work categories",
     languageSwitcher: "Language",
   },
-  localeLabels: {
-    en: "EN",
-    de: "DE",
-    tr: "TR",
-  },
   nav: {
     gallery: "GALLERY",
     about: "ABOUT",
@@ -232,11 +235,6 @@ const de: TranslationMessages = {
     primaryNavigation: "Hauptnavigation",
     workCategoriesNavigation: "Werkkategorien",
     languageSwitcher: "Sprache",
-  },
-  localeLabels: {
-    en: "EN",
-    de: "DE",
-    tr: "TR",
   },
   nav: {
     gallery: "GALERIE",
@@ -311,11 +309,6 @@ const tr: TranslationMessages = {
     primaryNavigation: "Birincil gezinme",
     workCategoriesNavigation: "Çalışma kategorileri",
     languageSwitcher: "Dil",
-  },
-  localeLabels: {
-    en: "EN",
-    de: "DE",
-    tr: "TR",
   },
   nav: {
     gallery: "GALERİ",

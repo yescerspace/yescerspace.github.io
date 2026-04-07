@@ -1,7 +1,7 @@
 {
   "sourceOfTruth": "MANUAL FILE — edit this JSON to define gallery projects and media paths. Optional \"hidden\": true skips a project in the 3D gallery (keep folder + portfolio JSON for later). Titles: portfolio-content-*.json. gallery:sync refreshes images[] + lastUpdated.",
   "version": 1,
-  "lastUpdated": "2026-04-07T02:02:12.065Z",
+  "lastUpdated": "2026-04-07T09:29:55.292Z",
   "projects": [
     {
       "category": "Interactive / VR",

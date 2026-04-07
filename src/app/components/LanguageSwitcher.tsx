@@ -3,7 +3,11 @@ import {
   useCallback,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
-import { LOCALES, type Locale } from "../i18n/translations";
+import {
+  LOCALES,
+  LOCALE_DISPLAY_LABELS,
+  type Locale,
+} from "../i18n/translations";
 import { useLanguage } from "../context/LanguageContext";
 
 export function LanguageSwitcher() {
@@ -55,7 +59,7 @@ export function LanguageSwitcher() {
                     : undefined
                 }
               >
-                {messages.localeLabels[code]}
+                {LOCALE_DISPLAY_LABELS[code]}
               </span>
             </span>
           </Fragment>
