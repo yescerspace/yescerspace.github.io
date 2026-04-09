@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "prebuild": "cp index.template.html index.html && node scripts/sync-gallery-from-root.mjs",
-    "build": "vite build && cp index.html 404.html",
+    "build": "vite build && cp index.html 404.html && cp src/app/assets/gallery-sun-ray-white.png ./gallery-sun-ray-white.png",
     "predev": "cp index.template.html index.html && node scripts/sync-gallery-from-root.mjs",
     "dev": "vite",
     "typecheck": "tsc --noEmit",
