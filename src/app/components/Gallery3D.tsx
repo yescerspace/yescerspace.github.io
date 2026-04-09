@@ -33,6 +33,7 @@ import {
   localizedCategory,
   portfolioProjectCopy,
 } from "../i18n/translations";
+import gallerySunRayAssetUrl from "../assets/gallery-sun-ray-white.png?url";
 import { publicAsset } from "../utils/publicAsset";
 import { logGalleryHeroLoadErrorsInDev } from "../utils/galleryDevValidation";
 import {
@@ -1161,8 +1162,6 @@ const COVER_PHOTO_NEUTRAL = new THREE.Color(1, 1, 1);
 
 /** Fallback outer veil (matches previous fixed purple) when cover color cannot be sampled. */
 const DEFAULT_DISC_OUTER_GLOW = new THREE.Vector3(0.38, 0.32, 0.52);
-/** White sun-ray PNG (transparent center void) — tinted pastel via {@link HALO_PASTEL_LERP} (see gallerySunRaysMaterial). */
-const HALO_SUNBURST_PATH = "gallery-sun-ray-white.png";
 /** Mix cover glow toward white for soft pastel (0 = raw, 1 = white). */
 const HALO_PASTEL_LERP = 0.62;
 const _haloPastelScratch = new THREE.Color();
@@ -2417,7 +2416,7 @@ function GalleryScene({
   const autoRotateSpeed =
     visibleCount >= 2 ? AUTO_ROTATE_SPEED_MANY : AUTO_ROTATE_SPEED;
 
-  const sunBurstTex = useTexture(publicAsset(HALO_SUNBURST_PATH));
+  const sunBurstTex = useTexture(gallerySunRayAssetUrl);
   useLayoutEffect(() => {
     sunBurstTex.colorSpace = THREE.SRGBColorSpace;
     sunBurstTex.wrapS = THREE.ClampToEdgeWrapping;
