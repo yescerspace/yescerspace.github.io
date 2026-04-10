@@ -33,7 +33,7 @@ import {
   localizedCategory,
   portfolioProjectCopy,
 } from "../i18n/translations";
-import gallerySunRayAssetUrl from "../assets/gallery-sun-ray-white.png?url";
+import gallerySunRayAssetUrl from "../assets/gallery-halo-grey-ring.png?url";
 import { publicAsset } from "../utils/publicAsset";
 import { logGalleryHeroLoadErrorsInDev } from "../utils/galleryDevValidation";
 import {
@@ -46,7 +46,10 @@ import {
   primaryGalleryTextureUrl,
   withGalleryAssetCacheBust,
 } from "../utils/galleryMedia";
-import { playGalleryHoverChime } from "../utils/galleryHoverSfx";
+import {
+  playGalleryHoverChime,
+  preloadGalleryHoverSfx,
+} from "../utils/galleryHoverSfx";
 import {
   createGallerySunburstHaloMaterial,
   SUN_RAYS_PLANE_SIDE_MULT,
@@ -57,6 +60,12 @@ import {
   GALLERY_SPARKLE_LAYER_Z,
   GALLERY_SPARKLE_RENDER_ORDER,
 } from "./galleryHoverSparkles";
+
+/** Hover halo diskin hafif önünde (kamera yönü +Z); arkada kalınca opak disk tamamen kapatıyordu. */
+const GALLERY_HALO_LAYER_Z = 0.01;
+const GALLERY_HALO_RENDER_ORDER = 4;
+/** Hover’daki gezegen komşularının üstünde çizilir (renderOrder). */
+const GALLERY_CARD_HOVER_RENDER_ORDER = 28;
 
 if (import.meta.env.DEV) {
   THREE.Cache.enabled = false;
@@ -682,6 +691,10 @@ function ringRadiusWorld(
 /** Used by camera framing math (must sit before carouselFramingExtents) */
 const HOVER_SCALE = 1.06;
 const HOVER_LIFT = 0.16;
+/**
+ * Uzak/küçük görünen gezegenlerde hover: kameraya doğru (dünya birimi). Yakın/büyükte boost 0’a iner.
+ */
+const HOVER_TOWARD_CAMERA_WORLD = 0.13;
 /** Uniform mesh scale — disc / box hero size in the shell (satellite “planets”). */
 const CARD_MESH_BASE_SCALE = 1.64;
 /** Pull ring positions toward center for a tighter circle (after parallax) */
@@ -1166,6 +1179,35 @@ const DEFAULT_DISC_OUTER_GLOW = new THREE.Vector3(0.38, 0.32, 0.52);
 const HALO_PASTEL_LERP = 0.62;
 const _haloPastelScratch = new THREE.Color();
 const _HALO_WHITE = new THREE.Color(0xffffff);
+/** Koyu/mor kapaklarda halo için pastel üst ton (görünürlük + yumuşaklık). */
+const _HALO_PASTEL_SOFT = new THREE.Color(0xe8e4f6);
+/** Hover halo halkası: kapak rengini doyurganlaştır (her gezegende farklı his). */
+const _sunRayCoverTint = new THREE.Color();
+const HALO_RING_COVER_SAT_BOOST = 1.48;
+/** rad/s — yavaş sürekli dönüş (hover’da). */
+const HALO_RING_SPIN_SPEED = 0.048;
+
+/**
+ * Koyu kapaklarda (mor vb.) additive halo kaybolmasın: parlaklık tabanı + hafif pastel.
+ */
+function applyHaloRingPastelLiftForDarkCovers(c: THREE.Color): void {
+  let lum = c.r * 0.299 + c.g * 0.587 + c.b * 0.114;
+  const minLum = 0.39;
+  if (lum < minLum && lum > 1e-8) {
+    const k = Math.min(minLum / lum, 2.55);
+    c.r = THREE.MathUtils.clamp(c.r * k, 0.06, 1);
+    c.g = THREE.MathUtils.clamp(c.g * k, 0.06, 1);
+    c.b = THREE.MathUtils.clamp(c.b * k, 0.06, 1);
+  }
+  lum = c.r * 0.299 + c.g * 0.587 + c.b * 0.114;
+  if (lum < 0.54) {
+    const t = ((0.54 - lum) / 0.54) * 0.42;
+    c.lerp(_HALO_PASTEL_SOFT, t);
+  }
+  c.r = THREE.MathUtils.clamp(c.r, 0.08, 1);
+  c.g = THREE.MathUtils.clamp(c.g, 0.08, 1);
+  c.b = THREE.MathUtils.clamp(c.b, 0.08, 1);
+}
 
 /**
  * Same center-crop square as {@link applySquareFaceTextureUV} (object-fit: cover on the card).
@@ -1696,12 +1738,32 @@ uniform vec3 uCoverGlow;`,
 
     const t = Math.min(1, delta * HOVER_LERP);
     const zoomScale = 1 + ZOOM_SCALE_BOOST * ziLayout;
+
+    const hoverBoostSatellite =
+      satelliteFloat && !modalOpen
+        ? (() => {
+            const smin = ALL_CLOUD_PERSPECTIVE_CLAMP_MIN;
+            const smax = ALL_CLOUD_PERSPECTIVE_CLAMP_MAX;
+            const span = smax - smin;
+            if (span <= 1e-6) return 1;
+            const tNear = THREE.MathUtils.clamp(
+              (smoothDepthScaleRef.current - smin) / span,
+              0,
+              1,
+            );
+            return 1 - tNear;
+          })()
+        : 1;
+
+    const hoverLerpFactor =
+      hovered && !modalOpen ? (satelliteFloat ? hoverBoostSatellite : 1) : 0;
+    const hoverScaleMul = THREE.MathUtils.lerp(1, HOVER_SCALE, hoverLerpFactor);
     const targetS =
-      CARD_MESH_BASE_SCALE *
-      cardScaleMul *
-      (hovered ? HOVER_SCALE : 1) *
-      zoomScale;
-    const targetY = hovered ? HOVER_LIFT : 0;
+      CARD_MESH_BASE_SCALE * cardScaleMul * hoverScaleMul * zoomScale;
+    const targetY =
+      hovered && !modalOpen
+        ? HOVER_LIFT * (satelliteFloat ? hoverBoostSatellite : 1)
+        : 0;
 
     const s = THREE.MathUtils.lerp(smoothMeshScaleRef.current, targetS, t);
     smoothMeshScaleRef.current = s;
@@ -2068,6 +2130,35 @@ uniform vec3 uCoverGlow;`,
       depthScaleMul = smoothDepthScaleRef.current;
     }
 
+    if (satelliteFloat && hovered && !modalOpen) {
+      const span =
+        ALL_CLOUD_PERSPECTIVE_CLAMP_MAX - ALL_CLOUD_PERSPECTIVE_CLAMP_MIN;
+      const tNear =
+        span > 1e-6
+          ? THREE.MathUtils.clamp(
+              (depthScaleMul - ALL_CLOUD_PERSPECTIVE_CLAMP_MIN) / span,
+              0,
+              1,
+            )
+          : 0;
+      const farBoost = 1 - tNear;
+      if (farBoost > 0.02) {
+        const Sw = GALLERY_GROUP_WORLD_SCALE;
+        const wx = fx * Sw;
+        const wy = ORBIT_TARGET_Y + fy * Sw;
+        const wz = fz * Sw;
+        _toCamera.subVectors(camera.position, _scratchA.set(wx, wy, wz));
+        const len = _toCamera.length();
+        if (len > 1e-6) {
+          _toCamera.multiplyScalar(1 / len);
+          const pullW = HOVER_TOWARD_CAMERA_WORLD * farBoost;
+          fx += (_toCamera.x * pullW) / Sw;
+          fy += (_toCamera.y * pullW) / Sw;
+          fz += (_toCamera.z * pullW) / Sw;
+        }
+      }
+    }
+
     g.position.set(fx, fy, fz);
 
     mesh.scale.setScalar(s * depthScaleMul * layoutScaleMul);
@@ -2187,37 +2278,45 @@ uniform vec3 uCoverGlow;`,
         const srMesh = sunRayMeshRef.current;
         srMesh.raycast = () => {};
         const su = sunRayMaterial.uniforms as {
-          uTime: { value: number };
           uAlpha: { value: number };
           uTint: { value: THREE.Vector3 };
-          uStrength: { value: number };
         };
-        const t = state.clock.elapsedTime;
-        su.uTime.value = t;
         su.uAlpha.value = a;
-        /** Same RGB as disc `uCoverGlow` (feather + `uCoverGlow * _glow * 0.22`), not pastel-white mix. */
-        su.uTint.value.set(g.x, g.y, g.z);
-        const strWave =
-          2.45 +
-          0.14 * Math.sin(t * 0.62) +
-          0.09 * Math.sin(t * 1.17 + slot * 1.4);
-        su.uStrength.value = strWave;
+        _sunRayCoverTint.setRGB(g.x, g.y, g.z);
+        const lum =
+          _sunRayCoverTint.r * 0.299 +
+          _sunRayCoverTint.g * 0.587 +
+          _sunRayCoverTint.b * 0.114;
+        _sunRayCoverTint.r = THREE.MathUtils.clamp(
+          lum + (_sunRayCoverTint.r - lum) * HALO_RING_COVER_SAT_BOOST,
+          0.04,
+          1,
+        );
+        _sunRayCoverTint.g = THREE.MathUtils.clamp(
+          lum + (_sunRayCoverTint.g - lum) * HALO_RING_COVER_SAT_BOOST,
+          0.04,
+          1,
+        );
+        _sunRayCoverTint.b = THREE.MathUtils.clamp(
+          lum + (_sunRayCoverTint.b - lum) * HALO_RING_COVER_SAT_BOOST,
+          0.04,
+          1,
+        );
+        applyHaloRingPastelLiftForDarkCovers(_sunRayCoverTint);
+        su.uTint.value.set(
+          _sunRayCoverTint.r,
+          _sunRayCoverTint.g,
+          _sunRayCoverTint.b,
+        );
         if (a < 0.02) {
           sunRaySpinAccumRef.current = 0;
         } else if (!prefersReducedMotion) {
-          sunRaySpinAccumRef.current += delta * 0.082;
+          sunRaySpinAccumRef.current += delta * HALO_RING_SPIN_SPEED;
         }
         srMesh.quaternion.copy(mesh.quaternion);
         srMesh.rotateZ(sunRaySpinAccumRef.current);
         const base = Math.max(mesh.scale.x, mesh.scale.y);
-        const pulse = prefersReducedMotion
-          ? 1
-          : 1 +
-            0.046 * Math.sin(t * 0.51 + slot * 1.83) +
-            0.032 * Math.sin(t * 0.94 + slot * 2.7) +
-            0.021 * Math.sin(t * 1.58 + slotHash01(slot, 2) * 6.283) +
-            0.014 * Math.sin(t * 2.31 + slotHash01(slot, 5) * 6.283);
-        srMesh.scale.setScalar(base * pulse);
+        srMesh.scale.setScalar(base);
       }
 
       const engaged = hovered && !modalOpen;
@@ -2225,6 +2324,26 @@ uniform vec3 uCoverGlow;`,
         playGalleryHoverChime();
       }
       prevHoveredForChimeRef.current = engaged;
+
+      const onTop = hovered && !modalOpen;
+      const cardGroup = groupRef.current;
+      if (cardGroup) {
+        cardGroup.renderOrder = onTop ? GALLERY_CARD_HOVER_RENDER_ORDER : 0;
+      }
+      mesh.renderOrder = onTop ? GALLERY_CARD_HOVER_RENDER_ORDER : 0;
+      if (sparkleMeshRef.current) {
+        sparkleMeshRef.current.renderOrder = onTop
+          ? GALLERY_CARD_HOVER_RENDER_ORDER - 1
+          : GALLERY_SPARKLE_RENDER_ORDER;
+      }
+      if (sunRayMeshRef.current) {
+        sunRayMeshRef.current.renderOrder = onTop
+          ? GALLERY_CARD_HOVER_RENDER_ORDER + 1
+          : GALLERY_HALO_RENDER_ORDER;
+      }
+    } else if (mesh) {
+      mesh.renderOrder =
+        hovered && !modalOpen ? GALLERY_CARD_HOVER_RENDER_ORDER : 0;
     }
   });
 
@@ -2245,9 +2364,9 @@ uniform vec3 uCoverGlow;`,
           ref={sunRayMeshRef}
           geometry={sunRayGeometry}
           material={sunRayMaterial}
-          position={[0, 0, -0.028]}
+          position={[0, 0, GALLERY_HALO_LAYER_Z]}
           frustumCulled={false}
-          renderOrder={-3}
+          renderOrder={GALLERY_HALO_RENDER_ORDER}
         />
       ) : null}
       <mesh
@@ -2436,6 +2555,10 @@ function GalleryScene({
   });
 
   useEffect(() => {
+    preloadGalleryHoverSfx();
+  }, []);
+
+  useEffect(() => {
     if (!modalOpen) return;
     orbitPhysicsApiRef.current.orbitMomentum = 0;
   }, [modalOpen]);
@@ -2519,7 +2642,7 @@ function GalleryScene({
                 setHoveredIndex(imageIndex);
               }}
               onHoverEnd={() => {
-                setHoveredIndex(null);
+    setHoveredIndex(null);
               }}
               onPick={() => onPick(image)}
               onSoftGalleryHint={onSoftGalleryHint}
@@ -2659,7 +2782,7 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
 
   /** No `1+` media — still show hero (`0.*`) so the modal is never empty. */
   if (detailUrls.length === 0) {
-    return (
+  return (
       <div
         ref={setScrollRef}
         className="min-h-[min(70vh,580px)] w-full min-w-0 bg-app-shell-bg/40"
@@ -2683,7 +2806,7 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
     );
   }
 
-  return (
+              return (
     <div
       ref={setScrollRef}
       className="max-h-[min(70vh,580px)] w-full min-w-0 overflow-y-auto overscroll-y-contain bg-app-shell-bg/35 [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar]:w-0"
@@ -2752,7 +2875,7 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
                   src={src}
                   alt={label}
                   className="block h-auto max-w-full w-full select-none bg-black/10"
-                  draggable={false}
+                        draggable={false}
                   loading={i <= 1 ? "eager" : "lazy"}
                   decoding="async"
                   fetchPriority={i === 0 ? "high" : i === 1 ? "high" : "low"}
@@ -2769,11 +2892,11 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
                   }}
                 />
               )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
   );
 });
 
@@ -2913,7 +3036,7 @@ export function Gallery3D({
       <div className="flex min-h-0 w-full flex-1 flex-col px-2 pb-0 pt-0 sm:px-4">
         <div
           className="relative min-h-[220px] w-full min-w-0 flex-1 basis-0 select-none bg-background sm:min-h-[240px]"
-          style={{
+            style={{
             touchAction: "none",
             backgroundImage: "var(--app-shell-gradient)",
             backgroundAttachment: "fixed",
@@ -2977,7 +3100,7 @@ export function Gallery3D({
         </div>
 
         <p
-          className="pointer-events-none w-full max-w-lg shrink-0 self-center px-4 pb-1 pt-2 text-center text-sm font-medium italic leading-snug tracking-[0.12em] text-muted-foreground sm:pb-1.5"
+          className="pointer-events-none w-full max-w-lg shrink-0 self-center px-4 pb-1 pt-2 text-center text-xs font-medium italic leading-snug tracking-[0.12em] text-muted-foreground sm:pb-1.5"
           aria-live="polite"
         >
           {galleryCopy.exploreHint}
@@ -2997,7 +3120,7 @@ export function Gallery3D({
             <div
               ref={modalDetailWheelRootRef}
               className="absolute inset-0 overflow-y-auto overscroll-y-contain p-6 sm:p-10 flex items-start justify-center"
-              style={{
+                style={{
                 background: "var(--modal-backdrop)",
                 backdropFilter: "blur(20px)",
                 WebkitBackdropFilter: "blur(20px)",
