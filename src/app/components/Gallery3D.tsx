@@ -699,19 +699,21 @@ function ringRadiusWorld(
 }
 
 /** Used by camera framing math (must sit before carouselFramingExtents) */
-const HOVER_SCALE = 1.06;
-const HOVER_LIFT = 0.16;
+const HOVER_SCALE = 1.24;
+const HOVER_LIFT = 0.19;
 /**
  * Uzak/küçük görünen gezegenlerde hover: kameraya doğru (dünya birimi). Yakın/büyükte boost 0’a iner.
  */
-const HOVER_TOWARD_CAMERA_WORLD = 0.13;
+/** Dünya birimi — hover’da kameraya doğru kaydırma (yakındaki disklerde de taban pay). */
+const HOVER_TOWARD_CAMERA_WORLD = 0.27;
 /** Uniform mesh scale — disc / box hero size in the shell (satellite “planets”). */
 const CARD_MESH_BASE_SCALE = 1.64;
 /** Pull ring positions toward center for a tighter circle (after parallax) */
 const RING_RADIAL_COMPACT = 0.8;
 /**
- * When mesh scale > 1, nudge the group toward ring center so growth reads inward
- * (pull = (scale - 1) * SCALE_INWARD_K * ringRadius).
+ * When mesh scale > 1, nudge the group toward ring center — **only from base scale**
+ * (zoom/year), never from hover scale; otherwise hover reads like drifting toward the hub.
+ * `pull = (scaleForHubInward - 1) * SCALE_INWARD_K * ringRadius`.
  */
 const SCALE_INWARD_K = 0.5;
 /** Yakın zoom’da kabuk genişlemesi — düşük = gezegenler birbirine daha yakın kalır. */
@@ -985,9 +987,10 @@ function AdaptiveFovSync({
   return null;
 }
 
-const HOVER_LERP = 10;
+/** Daha düşük = hover’da ölçeğe daha yavaş yaklaşır (`delta * HOVER_LERP`). */
+const HOVER_LERP = 5;
 /** Hover sun-ray layer opacity 0→1 (satellite discs). */
-const HOVER_HALO_LERP = 13;
+const HOVER_HALO_LERP = 6;
 
 /** Slow camera orbit — invisible hub; primary motion (paused on hover / modal). */
 const AUTO_ROTATE_SPEED = 0.32;
@@ -1752,32 +1755,17 @@ uniform vec3 uCoverGlow;`,
 
     const t = Math.min(1, delta * HOVER_LERP);
     const zoomScale = 1 + ZOOM_SCALE_BOOST * ziLayout;
+    /** Hub’a merkez çekişi için — hover ölçeği hariç (yoksa hover çekirdeğe süzülür gibi görünür). */
+    const scaleForHubInward =
+      CARD_MESH_BASE_SCALE * cardScaleMul * zoomScale;
 
-    const hoverBoostSatellite =
-      satelliteFloat && !modalOpen
-        ? (() => {
-            const smin = ALL_CLOUD_PERSPECTIVE_CLAMP_MIN;
-            const smax = ALL_CLOUD_PERSPECTIVE_CLAMP_MAX;
-            const span = smax - smin;
-            if (span <= 1e-6) return 1;
-            const tNear = THREE.MathUtils.clamp(
-              (smoothDepthScaleRef.current - smin) / span,
-              0,
-              1,
-            );
-            return 1 - tNear;
-          })()
-        : 1;
-
-    const hoverLerpFactor =
-      hovered && !modalOpen ? (satelliteFloat ? hoverBoostSatellite : 1) : 0;
-    const hoverScaleMul = THREE.MathUtils.lerp(1, HOVER_SCALE, hoverLerpFactor);
+    const hoverActive = hovered && !modalOpen ? 1 : 0;
+    const hoverScaleMul = THREE.MathUtils.lerp(1, HOVER_SCALE, hoverActive);
     const targetS =
       CARD_MESH_BASE_SCALE * cardScaleMul * hoverScaleMul * zoomScale;
+    /** Bulut görünümünde düşey “lift” yok; yaklaşma yalnızca `HOVER_TOWARD_CAMERA_WORLD` ile. */
     const targetY =
-      hovered && !modalOpen
-        ? HOVER_LIFT * (satelliteFloat ? hoverBoostSatellite : 1)
-        : 0;
+      hovered && !modalOpen ? (satelliteFloat ? 0 : HOVER_LIFT) : 0;
 
     const s = THREE.MathUtils.lerp(smoothMeshScaleRef.current, targetS, t);
     smoothMeshScaleRef.current = s;
@@ -1904,7 +1892,8 @@ uniform vec3 uCoverGlow;`,
         inwardY = dy3 / radialLen3;
         inwardZ = dz3 / radialLen3;
       }
-      const inwardPull = (s - 1) * SCALE_INWARD_K * radius;
+      const inwardPull =
+        (scaleForHubInward - 1) * SCALE_INWARD_K * radius;
       const py =
         basePy + inwardY * inwardPull + driftY;
       px = basePx + inwardX * inwardPull + driftX;
@@ -1944,7 +1933,8 @@ uniform vec3 uCoverGlow;`,
         inwardX = dx / radialLen;
         inwardZ = dz / radialLen;
       }
-      const inwardPull = (s - 1) * SCALE_INWARD_K * radius;
+      const inwardPull =
+        (scaleForHubInward - 1) * SCALE_INWARD_K * radius;
       px = basePx + inwardX * inwardPull;
       pz = basePz + inwardZ * inwardPull;
       localY = yHover;
@@ -2157,20 +2147,21 @@ uniform vec3 uCoverGlow;`,
             )
           : 0;
       const farBoost = 1 - tNear;
-      if (farBoost > 0.02) {
-        const Sw = GALLERY_GROUP_WORLD_SCALE;
-        const wx = fx * Sw;
-        const wy = ORBIT_TARGET_Y + fy * Sw;
-        const wz = fz * Sw;
-        _toCamera.subVectors(camera.position, _scratchA.set(wx, wy, wz));
-        const len = _toCamera.length();
-        if (len > 1e-6) {
-          _toCamera.multiplyScalar(1 / len);
-          const pullW = HOVER_TOWARD_CAMERA_WORLD * farBoost;
-          fx += (_toCamera.x * pullW) / Sw;
-          fy += (_toCamera.y * pullW) / Sw;
-          fz += (_toCamera.z * pullW) / Sw;
-        }
+      const Sw = GALLERY_GROUP_WORLD_SCALE;
+      const wx = fx * Sw;
+      const wy = ORBIT_TARGET_Y + fy * Sw;
+      const wz = fz * Sw;
+      _toCamera.subVectors(camera.position, _scratchA.set(wx, wy, wz));
+      const len = _toCamera.length();
+      if (len > 1e-6) {
+        _toCamera.multiplyScalar(1 / len);
+        /** Yakındaki disklerde de belirgin: taban + uzak slotlarda ekstra. */
+        const pullW =
+          HOVER_TOWARD_CAMERA_WORLD *
+          THREE.MathUtils.lerp(0.5, 1, farBoost);
+        fx += (_toCamera.x * pullW) / Sw;
+        fy += (_toCamera.y * pullW) / Sw;
+        fz += (_toCamera.z * pullW) / Sw;
       }
     }
 
