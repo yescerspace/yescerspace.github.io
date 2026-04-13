@@ -34,6 +34,7 @@ import {
   portfolioProjectCopy,
 } from "../i18n/translations";
 import gallerySunRayAssetUrl from "../assets/gallery-halo-grey-ring.png?url";
+import artstationIconUrl from "../assets/artstation.png?url";
 import { publicAsset } from "../utils/publicAsset";
 import { cn } from "./ui/utils";
 import { logGalleryHeroLoadErrorsInDev } from "../utils/galleryDevValidation";
@@ -66,6 +67,12 @@ const GALLERY_CARD_HOVER_RENDER_ORDER = 28;
 if (import.meta.env.DEV) {
   THREE.Cache.enabled = false;
 }
+
+/** work/2 detail: ArtStation album link beside “Back to gallery”. */
+const WORK2_ARTSTATION_ALBUM_URL =
+  "https://www.artstation.com/yesimceren/albums/14104609";
+/** `false` iken ikon gösterilmez; tekrar açmak için `true` yap. */
+const WORK2_ARTSTATION_BUTTON_ENABLED = false;
 
 /** Detail modal: allow first-row video at top; others only when vertically centered in the scroller. */
 const DETAIL_FIRST_VIDEO_SCROLL_TOP_MAX = 56;
@@ -3218,16 +3225,37 @@ export function Gallery3D({
                   </div>
                 </div>
 
-                <motion.button
-                  type="button"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={closeModal}
-                  className="w-fit rounded-full bg-primary px-6 py-2.5 text-sm tracking-wide text-primary-foreground"
-                  style={{ fontWeight: 500 }}
-                >
-                  {galleryCopy.backToGallery}
-                </motion.button>
+                <div className="flex flex-wrap items-center gap-3">
+                  <motion.button
+                    type="button"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={closeModal}
+                    className="w-fit rounded-full bg-primary px-6 py-2.5 text-sm tracking-wide text-primary-foreground"
+                    style={{ fontWeight: 500 }}
+                  >
+                    {galleryCopy.backToGallery}
+                  </motion.button>
+                  {selectedImage.projectKey === "work/2" &&
+                  WORK2_ARTSTATION_BUTTON_ENABLED ? (
+                    <a
+                      href={WORK2_ARTSTATION_ALBUM_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex h-[22px] w-[22px] shrink-0 items-center justify-center transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+                      aria-label={galleryCopy.artStationAlbumAriaLabel}
+                    >
+                      <img
+                        src={artstationIconUrl}
+                        alt=""
+                        width={22}
+                        height={22}
+                        className="h-[22px] w-[22px] object-contain"
+                        decoding="async"
+                      />
+                    </a>
+                  ) : null}
+                </div>
               </motion.div>
 
               <button

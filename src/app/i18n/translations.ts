@@ -95,6 +95,8 @@ export type TranslationMessages = {
     /** Year line when entry is missing or `year` is empty in copy (never use manifest). */
     modalYearFallback: string;
     backToGallery: string;
+    /** work/2 detail: ArtStation icon next to back (opens in new tab). */
+    artStationAlbumAriaLabel: string;
     close: string;
     /** Alt text when an image fails to load (fallback UI). */
     imageErrorAlt: string;
@@ -209,6 +211,7 @@ const en: TranslationMessages = {
     modalProjectFallback: "Project",
     modalYearFallback: "—",
     backToGallery: "Back to gallery",
+    artStationAlbumAriaLabel: "ArtStation album (opens in new tab)",
     close: "Close",
     imageErrorAlt: "Error loading image",
   },
@@ -283,6 +286,7 @@ const de: TranslationMessages = {
     modalProjectFallback: "Projekt",
     modalYearFallback: "—",
     backToGallery: "Zurück zur Galerie",
+    artStationAlbumAriaLabel: "ArtStation-Album (öffnet in neuem Tab)",
     close: "Schließen",
     imageErrorAlt: "Bild konnte nicht geladen werden",
   },
@@ -357,6 +361,7 @@ const tr: TranslationMessages = {
     modalProjectFallback: "Proje",
     modalYearFallback: "—",
     backToGallery: "Galeriye dön",
+    artStationAlbumAriaLabel: "ArtStation albümü (yeni sekmede açılır)",
     close: "Kapat",
     imageErrorAlt: "Görüntü yüklenemedi",
   },
