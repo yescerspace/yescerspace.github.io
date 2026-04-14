@@ -7,6 +7,7 @@
     "tools": "Unreal Engine, Blender, Substance 3D Painter, Adobe Photoshop & Premiere Pro"
   },
   "work/2": {
+    "category": "3D Archive",
     "title": "3D Character Customization & Animation",
     "description": "Responsible for the creation of 3D character costumes and in-game visual assets. Full 3D costume construction in Blender, followed by UV unwrapping, mesh optimization, and skin-weight painting for proper in-game deformation. Texturing was completed in Substance 3D Painter, with a focus on material consistency and visual clarity. In addition to that I also contributed to the production of 2D assets such as illustrations, textures, UI visual components like buttons, screens, and interactive elements, ensuring visual coherence across more than 30 mobile game levels and over 100 characters, supporting a large-scale content pipeline I played a key role in the production of Fashion Battle (120M+ downloads), contributing to fashion concept development, 3D modeling, texturing, and UI-related visual design. Beyond production work, I actively participated in playtests, providing feedback on gameplay mechanics, visual design, and user experience. I also worked closely with development, design, and production teams to ensure quality control, consistency, and smooth integration of assets into the final product.",
     "year": "2021-2024",
@@ -20,6 +21,7 @@
     "tools": "Unity, Blender, Adobe Photoshop & Premiere Pro"
   },
   "work/4": {
+    "category": "Interactive / VR",
     "title": "Cozy Zen Game Design & Development",
     "description": "Cozy Zen is my master thesis project that explores cozy game experiences through the concept of a winter Zen garden. The goal was to create a calming yet engaging interactive game environment that offers players a sense of relaxation and presence. Within a very limited timeframe, I independently developed both the theoretical thesis and a fully playable prototype. I was responsible for the entire production process, including animation, visual design, and game development, bringing the concept to life by using Blender and Unity. I also utilized Codex to support the coding process and gameplay implementation. The project itself became a highly rewarding and educational journey from learning programming fundamentals to experimenting with different mechanics and refining every detail from concept to playable prototype.",
     "year": "2025",
@@ -33,6 +35,7 @@
     "tools": "Adobe Photoshop & Premiere Pro"
   },
   "work/6": {
+    "category": "Motion",
     "title": "Jazz Fest Commercial Design",
     "description": "This project was developed as a commercial motion piece for a jazz festival, combining rhythm-based editing, typography, and music-synced visual storytelling aligned with the festival’s brand tone. Beyond motion design, I took an active role in the full visual production process, including preparing the model through makeup styling and directing a professional photoshoot to create high-quality visual assets for the campaign. The final output integrated motion design with photographed material, focusing on rhythm, composition, and brand identity. The project was submitted to a competition and received the “Mansion Award” recognition.",
     "year": "2019",
@@ -81,6 +84,7 @@
     "tools": ""
   },
   "work/13": {
+    "category": "New",
     "title": "New project 3 --",
     "description": "Placeholder — replace title, description, and media in gallery/13/.",
     "year": "",
