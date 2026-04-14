@@ -1,6 +1,8 @@
-import galleryHoverSfx1Url from "../assets/gallery-hover-1.mp3?url";
-import galleryHoverSfx2Url from "../assets/gallery-hover-2.mp3?url";
-import galleryHoverSfx3Url from "../assets/gallery-hover-3.mp3?url";
+import galleryHoverSfx1Url from "../assets/gallery-hover-1.wav?url";
+import galleryHoverSfx2Url from "../assets/gallery-hover-2.wav?url";
+import galleryHoverSfx3Url from "../assets/gallery-hover-3.wav?url";
+import galleryHoverSfx4Url from "../assets/gallery-hover-4.wav?url";
+import galleryHoverSfx5Url from "../assets/gallery-hover-5.wav?url";
 
 /**
  * Zirve gain (0–1). Çalma anında uygulanır — ham tamponlar önbellekte; değiştirmek **hemen** etkiler (sayfayı yenile).
@@ -30,11 +32,13 @@ const HOVER_SFX_URLS = [
   galleryHoverSfx1Url,
   galleryHoverSfx2Url,
   galleryHoverSfx3Url,
+  galleryHoverSfx4Url,
+  galleryHoverSfx5Url,
 ] as const;
 
 let preloadHintsInjected = false;
 
-/** Tarayıcıya MP3’leri erken indirme ipucu — fetch ile aynı URL’ye hizalanır. */
+/** Tarayıcıya hover kliplerini erken indirme ipucu — fetch ile aynı URL’ye hizalanır. */
 function injectGalleryHoverSfxPreloadHints(): void {
   if (typeof document === "undefined" || preloadHintsInjected) return;
   preloadHintsInjected = true;
