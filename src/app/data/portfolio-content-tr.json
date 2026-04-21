@@ -6,7 +6,7 @@
     "tools": "Unreal Engine, Blender, Substance 3D Painter, Adobe Photoshop & Premiere Pro"
   },
   "work/2": {
-    "title": "Character Customization & Animation",
+    "title": "3D Karakter Özelleştirme ve Animasyon",
     "description": "3D karakter kostümleri ve oyun içi görsel varlıkların oluşturulmasından sorumluydum. Blender’da tam 3D kostüm üretimi, ardından UV açma, mesh optimizasyonu ve oyun içi deformasyon için skin-weight boyama. Dokulama Substance 3D Painter ile tamamlandı; malzeme tutarlılığı ve görsel netlik öncelikliydi. Buna ek olarak düğme, ekran ve etkileşimli öğeler gibi 2D varlıklara — illüstrasyon, doku ve UI bileşenlerine — katkı sağladım; 30’dan fazla mobil oyun seviyesi ve 100’ün üzerinde karakterde görsel bütünlük sağlandı. Fashion Battle (120M+ indirme) üretiminde moda konsepti, 3D modelleme, dokulama ve UI ile ilgili görsel tasarımda kilit rol oynadım. Üretimin yanı sıra oynanış testlerine katıldım; mekanikler, görsel tasarım ve kullanıcı deneyimi hakkında geri bildirim verdim. Geliştirme, tasarım ve prodüksiyon ekipleriyle kalite, tutarlılık ve varlıkların ürüne sorunsuz entegrasyonu için yakın çalıştım.",
     "year": "2021-2024",
     "tools": "Unity, Blender, Substance 3D Painter, Adobe Photoshop & Premiere Pro"
@@ -49,9 +49,9 @@
   },
   "work/9": {
     "title": "Wholy Cow Beef Tallow Marka, Ambalaj ve Kampanya Tasarımı",
-    "description": "Bu Wholy Cow Beef Tallow projesi, logo ve ambalaj tasarımıyla ayırt edici ve uyumlu bir marka kimliği oluşturmayı hedefledi. Markanın doğal konumlandırması ve hedef kitlesiyle uyum için birden fazla etiket konsepti üzerinde çalışıldı ve rafine edildi. Nihai sonuç, kalite ve güveni ileten sade, cesur ve otantik bir kimlik. Bir girişim olarak Wholy Cow üretime geçmeyi başardı ve şu anda Hollanda’da dağıtımda. Sosyal medya kampanyaları için yapay zeka destekli hareketli ve statik görseller geliştirildi; markanın görünürlüğü yüksek etkili, modern reklam içeriğiyle genişletildi.",
+    "description": "Bu Wholy Cow Beef Tallow projesi, logo ve ambalaj tasarımıyla ayırt edici ve uyumlu bir marka kimliği oluşturmayı hedefledi. Markanın doğal konumlandırması ve hedef kitlesiyle uyum için birden fazla etiket konsepti üzerinde çalışıldı ve rafine edildi. Nihai sonuç, kalite ve güveni ileten sade, cesur ve otantik bir kimlik. Ambalaj iki boyutta sunuluyor: yüksek ve küçük. Bir girişim olarak Wholy Cow Ossewit üretime geçmeyi başardı ve şu anda Hollanda’da dağıtımda. Sosyal medya kampanyaları için yapay zekâ destekli hareketli ve statik görseller geliştirildi; markanın görünürlüğü yüksek etkili, modern reklam içeriğiyle genişletildi.",
     "year": "2026",
-    "tools": "Adobe Illustrator & Photoshop, Premiere Pro"
+    "tools": "Adobe Illustrator ve Photoshop, Premiere Pro, yapay zekâ destekli araçlar"
   },
   "work/10": {
     "title": "Illustrations",
