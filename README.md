@@ -1,9 +1,38 @@
+## 🌌 Interactive Space Portfolio
 
-  # Portfolio website design
+An interactive 3D-inspired portfolio experience where projects are represented as planets in a dynamic space environment.
 
-  ## Running the code
+Users can explore the universe, interact with rotating planets, and navigate to detailed project views through an immersive interface.
 
-  Run `npm i` to install the dependencies.
 
-  Run `npm run dev` to start the development server.
-  
+## ✨ Features
+
+* 🪐 Rotating planetary system
+* 🖱️ Interactive navigation between projects
+* 🎯 Smooth animations and transitions
+* 📄 Dedicated detail pages for each project
+* 🎨 Custom-designed UI/UX experience
+
+
+## 🛠️ Tech Stack
+TypeScript
+React
+Three.js
+React Three Fiber
+Tailwind CSS
+
+Built with a focus on interaction, motion, and immersive experience.
+
+## 📌 Notes
+
+This project is a custom-designed and developed portfolio experience.
+
+The concept, animations, and implementation are original and created by me.
+
+
+## ©️ License
+
+© 2026 Yeşim Ceren Ünal. All rights reserved.
+
+This project is for personal portfolio use.
+Do not copy, redistribute, or reuse without permission.
