@@ -85,6 +85,7 @@ export type TranslationMessages = {
     contact: string;
   };
   sidebar: {
+    /** Header line under brand (e.g. PORTFOLIO). */
     portfolio: string;
     taglineWorks: string;
     taglineOther: string;
@@ -230,13 +231,13 @@ const en: TranslationMessages = {
   },
   about: {
     lead:
-      "I'm a multidisciplinary designer working across 3D, motion, and interaction. I'm curious by nature, I enjoy learning, and I try to constantly improve everything rather than leaving things as they are.",
+      "Hi, I'm Ceren, a multidisciplinary designer working across 3D, motion, and interaction. I'm curious by nature, I enjoy learning, and I try to constantly improve everything rather than leaving things as they are.",
     p2:
-      "It all started with graphic design. Designs were supposed to stay static, but that didn't last long. I'm drawn to motion and interaction, so over time my work evolved into responsive, immersive experiences that pull people in.",
+      "It all started with a bachelor's degree in graphic design. Designs were supposed to stay static, but that didn't last long. I'm drawn to motion and interaction, so over time my work evolved into responsive, immersive experiences that pull people in.",
     p3:
-      "By combining my background in graphic design with a master's degree in 3D animation, I was able to refine my production methods and expand the way I work with tools. Today, I focus on how rhythm, movement, and interaction shape digital experiences, and I'm shifting away from static outputs toward evolving systems. Recently, I've been exploring AI as a rendering engine, using it as a medium to shape and materialize ideas.",
+      "By mixing my background with a master's degree in 3D animation, I was able to refine my production methods and expand the way I work with tools. After gaining experience with VR systems, game development, and simulations, I became more focused on how rhythm, movement, and interaction shape digital experiences, shifting away from static outputs toward evolving systems.",
     p4:
-      "Recently, my focus has been on building my portfolio website, programming NFC chips, and creating experiences that feel alive. I'm still exploring, still experimenting, and still making mistakes.",
+      "Recently, my focus has been on building more code-based mediums such as audio-reactive visuals, immersive visuals, and creating experiences that feel alive. I'm still exploring, still experimenting, and still making mistakes.",
   },
   contact: {
     headline:
@@ -310,13 +311,13 @@ const de: TranslationMessages = {
   },
   about: {
     lead:
-      "Ich bin ein multidisziplinärer Designer, der in den Bereichen 3D, Motion und Interaktion arbeitet. Ich bin von Natur aus neugierig, lerne gerne und versuche, alles kontinuierlich zu verbessern, anstatt Dinge so zu lassen, wie sie sind.",
+      "Hallo, ich bin Ceren, eine multidisziplinäre Designerin mit Schwerpunkt auf 3D, Motion und Interaktion. Ich bin von Natur aus neugierig, lerne gerne und versuche ständig, Dinge weiterzuentwickeln, anstatt sie so zu lassen, wie sie sind.",
     p2:
-      "Alles begann mit Grafikdesign. Eigentlich sollten Designs statisch bleiben, aber das hielt nicht lange. Ich fühle mich zu Bewegung und Interaktion hingezogen, sodass sich meine Arbeit mit der Zeit zu responsiven, immersiven Erlebnissen entwickelt hat, die Menschen in sich hineinziehen.",
+      "Alles begann mit einem Bachelorabschluss in Grafikdesign. Designs sollten eigentlich statisch bleiben, aber das hielt nicht lange an. Ich fühlte mich schon immer zu Bewegung und Interaktion hingezogen, sodass sich meine Arbeit mit der Zeit zu responsiven, immersiven Erfahrungen entwickelte, die Menschen hineinziehen.",
     p3:
-      "Durch die Kombination meines Hintergrunds im Grafikdesign mit einem Master in 3D-Animation konnte ich meine Produktionsmethoden verfeinern und meinen Umgang mit Tools erweitern. Heute beschäftige ich mich vor allem damit, wie Rhythmus, Bewegung und Interaktion digitale Erlebnisse prägen, und entferne mich zunehmend von statischen Ergebnissen hin zu sich entwickelnden Systemen. Kürzlich erkunde ich Künstliche Intelligenz als Rendering-Engine und nutze sie als Medium, um Ideen zu gestalten und zu materialisieren.",
+      "Durch die Verbindung meines Hintergrunds mit einem Masterabschluss in 3D-Animation konnte ich meine Produktionsmethoden verfeinern und meine Arbeitsweise mit digitalen Tools erweitern. Nachdem ich Erfahrungen mit VR-Systemen, Game Development und Simulationen gesammelt hatte, begann ich mich stärker darauf zu konzentrieren, wie Rhythmus, Bewegung und Interaktion digitale Erfahrungen formen, und verlagerte meinen Fokus von statischen Ergebnissen hin zu sich entwickelnden Systemen.",
     p4:
-      "In letzter Zeit liegt mein Fokus darauf, meine Portfolio-Website zu bauen, NFC-Chips zu programmieren und Erlebnisse zu schaffen, die sich lebendig anfühlen. Ich bin immer noch am Entdecken, am Ausprobieren und mache immer noch Fehler.",
+      "In letzter Zeit beschäftige ich mich verstärkt mit codebasierten Medien wie audioreaktiven Visuals, immersiven Visuals und der Gestaltung von Erfahrungen, die sich lebendig anfühlen. Ich entdecke weiterhin Neues, experimentiere weiter und mache immer noch Fehler.",
   },
   contact: {
     headline:
@@ -390,13 +391,13 @@ const tr: TranslationMessages = {
   },
   about: {
     lead:
-      "3D, motion ve etkileşim alanlarında çalışan multidisipliner bir tasarımcıyım. Meraklıyım, öğrenmeyi ve geliştirmeyi seviyorum.",
+      "Merhaba, ben Ceren. 3D, motion ve etkileşim alanlarında çalışan multidisipliner bir tasarımcıyım. Meraklıyım, öğrenmeyi seviyorum ve bir şeyleri olduğu gibi bırakmak yerine sürekli geliştirmeye çalışıyorum.",
     p2:
-      "Her şey grafik tasarımla başladı. Tasarımların statik kalması gerekiyordu ama bu uzun sürmedi. Çünkü hareketi ve etkileşimi seviyorum; işlerim zamanla tepki veren ve insanları içine çeken deneyimlere dönüştü.",
+      "Her şey grafik tasarım lisansıyla başladı. Tasarımların sabit kalması gerekiyordu ama bu çok uzun sürmedi. Hareket ve etkileşime her zaman ilgim vardı, bu yüzden zamanla işlerim insanı içine çeken immersif deneyimlere dönüştü.",
     p3:
-      "Grafik tasarım geçmişimi 3D animasyon alanındaki yüksek lisansımla birleştirerek üretim yöntemlerimi rafine ettim ve daha farklı araçlarla çalışmaya başladım. Bugün ritmin, hareketin ve etkileşimin dijital deneyimleri nasıl şekillendirdiğine odaklanıyorum; sabit çıktılardan uzaklaşıp evrilen sistemlere yöneliyorum.",
+      "Geçmişimi 3D animasyon alanındaki yüksek lisansımla birleştirerek üretim yöntemlerimi geliştirme ve araçlarla çalışma biçimimi genişletme fırsatı buldum. VR sistemleri, oyun geliştirme ve simülasyonlar üzerine deneyim kazandıktan sonra ritim, hareket ve etkileşimin dijital deneyimleri nasıl şekillendirdiğine daha fazla odaklanmaya başladım ve statik çıktılardan evrilen sistemlere yöneldim.",
     p4:
-      "Son zamanlarda yapay zekâyı kodlama ile destekleyerek fikirlerimi somutlaştırmak için kullanıyorum. Portfolio websitemi geliştirmek, NFC çipi programlamak ve yaşayan gibi hissettiren deneyimler üretmeye çalışıyorum. Hâlâ keşfediyorum, hâlâ deniyorum ve yanılıyorum.",
+      "Son zamanlarda odağım; ses tepkili görseller, immersif görseller ve canlı hissettiren deneyimler gibi daha kod tabanlı mecralar üretmek üzerine yoğunlaşıyor. Hâlâ keşfediyor, hâlâ deniyor ve hâlâ hata yapıyorum.",
   },
   contact: {
     headline:
