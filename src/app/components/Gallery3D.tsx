@@ -66,11 +66,24 @@ import {
   createGallerySunburstHaloMaterial,
   SUN_RAYS_PLANE_SIDE_MULT,
 } from "./gallerySunRaysMaterial";
+import { GalleryMouseParticles } from "./GalleryMouseParticles";
+import {
+  DEFAULT_GALLERY_PARALLAX,
+  GalleryParallaxContext,
+  useGalleryParallaxRef,
+} from "./galleryParallax";
 /** Hover halo diskin hafif önünde (kamera yönü +Z); arkada kalınca opak disk tamamen kapatıyordu. */
 const GALLERY_HALO_LAYER_Z = 0.01;
+/** İkinci PNG katmanı — halkayı biraz daha koyu/doygun gösterir. */
+const GALLERY_HALO_DARKEN_LAYER_Z = 0.003;
 const GALLERY_HALO_RENDER_ORDER = 4;
 /** Hover’daki gezegen komşularının üstünde çizilir (renderOrder). */
 const GALLERY_CARD_HOVER_RENDER_ORDER = 28;
+/**
+ * Hover sırasında “seçili gezegen”i temsil eden PNG halka (geçici kapatma).
+ * İstersen geri açmak için `true` yap.
+ */
+const SHOW_HOVER_SELECTION_RING_PNG = true;
 
 if (import.meta.env.DEV) {
   THREE.Cache.enabled = false;
@@ -840,10 +853,12 @@ const ADAPTIVE_FOV_AT_MAX_DISTANCE = 58;
 const ADAPTIVE_FOV_ABSOLUTE_CAP = 76;
 /** Exponential smoothing for FOV follow (~0.08–0.12 effective step at 60fps) */
 const ADAPTIVE_FOV_SMOOTHING = 9.5;
-/** Geometrik min’in altı — daha yakın zoom; clipping’e AdaptiveFov + floor karşılık gelir. */
-const ORBIT_MIN_DISTANCE_RELAX = 0.64;
-/** Max orbit distance as a multiple of min (wider zoom-out; min = closest zoom unchanged) */
-const ORBIT_MAX_DISTANCE_RATIO = 1.62;
+/** Geometrik min’in altı — tüm kabuk kadrajı (uzak zoom-out üst sınırı için de kullanılır). */
+const ORBIT_MIN_DISTANCE_RELAX = 0.52;
+/** İç halka / merkez gezegene yakın zoom — tam kabuktan bağımsız. */
+const ORBIT_HUB_MIN_DISTANCE_RELAX = 0.5;
+/** Max orbit distance as a multiple of full-shell relaxed min */
+const ORBIT_MAX_DISTANCE_RATIO = 2.12;
 /**
  * Initial camera distance between min and max (0 = closest zoom, 1 = farthest).
  * Higher = calmer opening frame; scroll still reaches `min`.
@@ -884,10 +899,9 @@ function cameraElevationAngle(): number {
  */
 const FRAMING_CLOUD_EXTENT_PAD = 1.22;
 
-function carouselFramingExtents(ringRadius: number): {
-  radialMax: number;
-  verticalHalf: number;
-} {
+type FramingExtents = { radialMax: number; verticalHalf: number };
+
+function carouselFramingExtents(ringRadius: number): FramingExtents {
   const sMax =
     CARD_MESH_BASE_SCALE * HOVER_SCALE * (1 + ZOOM_SCALE_BOOST);
   const rRing =
@@ -903,6 +917,38 @@ function carouselFramingExtents(ringRadius: number): {
   return { radialMax, verticalHalf };
 }
 
+/** İç halka (hub void) — merkeze en yakın gezegen kadrajı. */
+function hubPlanetFramingExtents(layoutRingRadius: number): FramingExtents {
+  const sMax =
+    CARD_MESH_BASE_SCALE * HOVER_SCALE * (1 + ZOOM_SCALE_BOOST);
+  const hubR =
+    layoutRingRadius *
+    0.95 *
+    CLOUD_HUB_VOID_MIN_XZ_FRAC_ALL *
+    ALL_CATEGORY_PAIRWISE_SPREAD;
+  const radialMax =
+    (hubR + CARD_W * sMax * 0.62) * GALLERY_GROUP_WORLD_SCALE;
+  const verticalHalf =
+    (CARD_H * sMax * 0.58 + HOVER_LIFT * 0.45) * GALLERY_GROUP_WORLD_SCALE;
+  return { radialMax, verticalHalf };
+}
+
+function minSafeOrbitDistanceFromExtents(
+  extents: FramingExtents,
+  ringRadiusFloor: number,
+  fovVerticalDeg: number,
+  aspect: number,
+): number {
+  const { radialMax, verticalHalf } = extents;
+  const boundRadius = Math.hypot(radialMax, verticalHalf);
+  const fovRad = THREE.MathUtils.degToRad(fovVerticalDeg);
+  const tanHalfV = Math.tan(fovRad * 0.5);
+  const tanHalfH = Math.tan(fovRad * 0.5) * Math.max(aspect, 0.25);
+  const dVert = (boundRadius * FRAMING_MARGIN) / tanHalfV;
+  const dHorz = (radialMax * FRAMING_MARGIN) / tanHalfH;
+  return Math.max(dVert, dHorz, ringRadiusFloor);
+}
+
 /**
  * Minimum orbit distance (camera to target) so the full carousel stays inside the
  * vertical and horizontal frusta for the given FOV and aspect.
@@ -912,19 +958,42 @@ function minSafeOrbitDistance(
   fovVerticalDeg: number,
   aspect: number,
 ): number {
-  const { radialMax, verticalHalf } = carouselFramingExtents(ringRadius);
-  const boundRadius = Math.hypot(radialMax, verticalHalf);
-  const fovRad = THREE.MathUtils.degToRad(fovVerticalDeg);
-  const tanHalfV = Math.tan(fovRad * 0.5);
-  const tanHalfH = Math.tan(fovRad * 0.5) * Math.max(aspect, 0.25);
-  const dVert = (boundRadius * FRAMING_MARGIN) / tanHalfV;
-  const dHorz = (radialMax * FRAMING_MARGIN) / tanHalfH;
-  /** Soft floor so tiny filters stay usable; geometric dVert usually dominates */
-  return Math.max(
-    dVert,
-    dHorz,
+  return minSafeOrbitDistanceFromExtents(
+    carouselFramingExtents(ringRadius),
     ringRadius * GALLERY_GROUP_WORLD_SCALE * 0.27 * FRAMING_CLOUD_EXTENT_PAD,
+    fovVerticalDeg,
+    aspect,
   );
+}
+
+/** Merkez / iç halkadaki tek gezegene yakın zoom için daha düşük min mesafe. */
+function minSafeOrbitDistanceForHub(
+  layoutRingRadius: number,
+  fovVerticalDeg: number,
+  aspect: number,
+): number {
+  return minSafeOrbitDistanceFromExtents(
+    hubPlanetFramingExtents(layoutRingRadius),
+    layoutRingRadius * GALLERY_GROUP_WORLD_SCALE * 0.1 * FRAMING_CLOUD_EXTENT_PAD,
+    fovVerticalDeg,
+    aspect,
+  );
+}
+
+function minimumVerticalFovDegreesFromExtents(
+  distance: number,
+  extents: FramingExtents,
+  aspect: number,
+): number {
+  const d = Math.max(distance, 1e-4);
+  const { radialMax, verticalHalf } = extents;
+  const boundRadius = Math.hypot(radialMax, verticalHalf);
+  const a = Math.max(aspect, 0.25);
+  const tanHalfFromVertical = (boundRadius * FRAMING_MARGIN) / d;
+  const tanHalfFromHorizontal = (radialMax * FRAMING_MARGIN) / (d * a);
+  const tanHalf = Math.max(tanHalfFromVertical, tanHalfFromHorizontal);
+  const capped = Math.min(tanHalf, Math.tan(THREE.MathUtils.degToRad(89)));
+  return THREE.MathUtils.radToDeg(2 * Math.atan(capped));
 }
 
 /**
@@ -936,28 +1005,37 @@ function minimumVerticalFovDegrees(
   ringRadius: number,
   aspect: number,
 ): number {
-  const d = Math.max(distance, 1e-4);
-  const { radialMax, verticalHalf } = carouselFramingExtents(ringRadius);
-  const boundRadius = Math.hypot(radialMax, verticalHalf);
-  const a = Math.max(aspect, 0.25);
-  const tanHalfFromVertical = (boundRadius * FRAMING_MARGIN) / d;
-  const tanHalfFromHorizontal = (radialMax * FRAMING_MARGIN) / (d * a);
-  const tanHalf = Math.max(tanHalfFromVertical, tanHalfFromHorizontal);
-  const capped = Math.min(tanHalf, Math.tan(THREE.MathUtils.degToRad(89)));
-  return THREE.MathUtils.radToDeg(2 * Math.atan(capped));
+  return minimumVerticalFovDegreesFromExtents(
+    distance,
+    carouselFramingExtents(ringRadius),
+    aspect,
+  );
 }
 
 function orbitZoomLimits(
-  ringRadius: number,
+  layoutRingRadius: number,
   aspect: number,
 ): { min: number; max: number } {
-  const geometricMin = minSafeOrbitDistance(ringRadius, CAMERA_FOV, aspect);
-  /** Allow noticeably closer zoom; stay above a small ring-relative floor */
-  const min = Math.max(
-    geometricMin * ORBIT_MIN_DISTANCE_RELAX,
-    ringRadius * GALLERY_GROUP_WORLD_SCALE * 0.17 * FRAMING_CLOUD_EXTENT_PAD,
+  const framingRadius = layoutRingRadius * ALL_CLOUD_FRAMING_RADIUS_MULT;
+  const geometricMinFull = minSafeOrbitDistance(
+    framingRadius,
+    CAMERA_FOV,
+    aspect,
   );
-  const max = min * ORBIT_MAX_DISTANCE_RATIO;
+  const geometricMinHub = minSafeOrbitDistanceForHub(
+    layoutRingRadius,
+    CAMERA_FOV,
+    aspect,
+  );
+  const minFullRelaxed = geometricMinFull * ORBIT_MIN_DISTANCE_RELAX;
+  const minHubRelaxed = geometricMinHub * ORBIT_HUB_MIN_DISTANCE_RELAX;
+  const floor =
+    layoutRingRadius * GALLERY_GROUP_WORLD_SCALE * 0.12 * FRAMING_CLOUD_EXTENT_PAD;
+  const min = Math.max(Math.min(minFullRelaxed, minHubRelaxed), floor);
+  const max = Math.max(
+    minFullRelaxed * ORBIT_MAX_DISTANCE_RATIO,
+    min * 1.35,
+  );
   return { min, max };
 }
 
@@ -1043,30 +1121,57 @@ function RingCameraSync({
 }
 
 function AdaptiveFovSync({
-  ringRadius,
+  layoutRingRadius,
   minDistance,
   maxDistance,
 }: {
-  ringRadius: number;
+  layoutRingRadius: number;
   minDistance: number;
   maxDistance: number;
 }) {
   const { camera, size } = useThree();
   const aspect = Math.max(size.width / Math.max(size.height, 1), 0.25);
+  const fullExtents = useMemo(
+    () =>
+      carouselFramingExtents(
+        layoutRingRadius * ALL_CLOUD_FRAMING_RADIUS_MULT,
+      ),
+    [layoutRingRadius],
+  );
+  const hubExtents = useMemo(
+    () => hubPlanetFramingExtents(layoutRingRadius),
+    [layoutRingRadius],
+  );
 
   useFrame((_, delta) => {
     if (!(camera instanceof THREE.PerspectiveCamera)) return;
 
     const dist = camera.position.distanceTo(_orbitTarget);
-    const floorFov = minimumVerticalFovDegrees(dist, ringRadius, aspect);
-
     const span = Math.max(maxDistance - minDistance, 1e-5);
     const u = THREE.MathUtils.clamp((dist - minDistance) / span, 0, 1);
-    const smoothT = u * u * (3 - 2 * u);
+    const zoomT = u * u * (3 - 2 * u);
+    const framingExtents: FramingExtents = {
+      radialMax: THREE.MathUtils.lerp(
+        hubExtents.radialMax,
+        fullExtents.radialMax,
+        zoomT,
+      ),
+      verticalHalf: THREE.MathUtils.lerp(
+        hubExtents.verticalHalf,
+        fullExtents.verticalHalf,
+        zoomT,
+      ),
+    };
+    const floorFov = minimumVerticalFovDegreesFromExtents(
+      dist,
+      framingExtents,
+      aspect,
+    );
+
     const cinematic = THREE.MathUtils.lerp(
       ADAPTIVE_FOV_AT_MIN_DISTANCE,
       ADAPTIVE_FOV_AT_MAX_DISTANCE,
-      smoothT,
+      zoomT,
     );
 
     const targetFov = Math.min(
@@ -1256,6 +1361,32 @@ function OrbitDragPhysicsSync({
     );
   });
 
+  return null;
+}
+
+/** Publishes orbit angles + zoom to 2D starfield (GalleryMouseParticles). */
+function GalleryParallaxBridge({
+  orbitControlsRef,
+  minDistance,
+  maxDistance,
+}: {
+  orbitControlsRef: MutableRefObject<StdOrbitControls | null>;
+  minDistance: number;
+  maxDistance: number;
+}) {
+  const parallaxRef = useGalleryParallaxRef();
+  useFrame(() => {
+    const store = parallaxRef;
+    const controls = orbitControlsRef.current;
+    if (!store || !controls) return;
+    const dist = controls.getDistance();
+    const span = Math.max(maxDistance - minDistance, 1e-5);
+    store.current = {
+      azimuth: controls.getAzimuthalAngle(),
+      polar: controls.getPolarAngle(),
+      distanceT: THREE.MathUtils.clamp((dist - minDistance) / span, 0, 1),
+    };
+  });
   return null;
 }
 
@@ -1595,7 +1726,7 @@ function GalleryCardMesh({
   const smoothHoverHaloRef = useRef(0);
   /** Cumulative Z spin for sun-ray quad (quaternion reset from disc each frame). */
   const sunRaySpinAccumRef = useRef(0);
-  const sunRayMeshRef = useRef<THREE.Mesh>(null);
+  const sunRayGroupRef = useRef<THREE.Group>(null);
   /** Kabuk: r (yarıçap), az (yaw), py (düzlem) — önceki kare bazına impuls. */
   const orbitDeformRef = useRef<OrbitDeformState>({ r: 0, az: 0, py: 0 });
   const orbitDeformVelRef = useRef<OrbitDeformState>({ r: 0, az: 0, py: 0 });
@@ -2370,14 +2501,19 @@ uniform vec3 uCoverGlow;`,
       const a = smoothHoverHaloRef.current;
       const g = coverOuterGlowRef.current;
 
-      if (sunRayMeshRef.current && sunRayMaterial) {
-        const srMesh = sunRayMeshRef.current;
-        srMesh.raycast = () => {};
+      if (sunRayGroupRef.current && sunRayMaterial) {
+        const srGroup = sunRayGroupRef.current;
+        srGroup.raycast = () => {};
+        for (const child of srGroup.children) {
+          if (child instanceof THREE.Mesh) child.raycast = () => {};
+        }
         const su = sunRayMaterial.uniforms as {
           uAlpha: { value: number };
           uTint: { value: THREE.Vector3 };
+          uTime: { value: number };
         };
         su.uAlpha.value = a;
+        su.uTime.value = prefersReducedMotion ? 0 : state.clock.elapsedTime;
         _sunRayCoverTint.setRGB(g.x, g.y, g.z);
         const lum =
           _sunRayCoverTint.r * 0.299 +
@@ -2409,10 +2545,10 @@ uniform vec3 uCoverGlow;`,
         } else if (!prefersReducedMotion) {
           sunRaySpinAccumRef.current += delta * HALO_RING_SPIN_SPEED;
         }
-        srMesh.quaternion.copy(mesh.quaternion);
-        srMesh.rotateZ(sunRaySpinAccumRef.current);
+        srGroup.quaternion.copy(mesh.quaternion);
+        srGroup.rotateZ(sunRaySpinAccumRef.current);
         const base = Math.max(mesh.scale.x, mesh.scale.y);
-        srMesh.scale.setScalar(base);
+        srGroup.scale.setScalar(base);
       }
 
       const onTop = hovered && !modalOpen;
@@ -2421,10 +2557,15 @@ uniform vec3 uCoverGlow;`,
         cardGroup.renderOrder = onTop ? GALLERY_CARD_HOVER_RENDER_ORDER : 0;
       }
       mesh.renderOrder = onTop ? GALLERY_CARD_HOVER_RENDER_ORDER : 0;
-      if (sunRayMeshRef.current) {
-        sunRayMeshRef.current.renderOrder = onTop
+      if (sunRayGroupRef.current) {
+        const haloRenderOrder = onTop
           ? GALLERY_CARD_HOVER_RENDER_ORDER + 1
           : GALLERY_HALO_RENDER_ORDER;
+        for (const child of sunRayGroupRef.current.children) {
+          if (child instanceof THREE.Mesh) {
+            child.renderOrder = haloRenderOrder;
+          }
+        }
       }
     } else if (mesh) {
       mesh.renderOrder =
@@ -2434,15 +2575,29 @@ uniform vec3 uCoverGlow;`,
 
   return (
     <group ref={groupRef} frustumCulled={false}>
-      {satelliteFloat && sunRayGeometry && sunRayMaterial ? (
-        <mesh
-          ref={sunRayMeshRef}
-          geometry={sunRayGeometry}
-          material={sunRayMaterial}
+      {SHOW_HOVER_SELECTION_RING_PNG &&
+      satelliteFloat &&
+      sunRayGeometry &&
+      sunRayMaterial ? (
+        <group
+          ref={sunRayGroupRef}
           position={[0, 0, GALLERY_HALO_LAYER_Z]}
           frustumCulled={false}
-          renderOrder={GALLERY_HALO_RENDER_ORDER}
-        />
+        >
+          <mesh
+            geometry={sunRayGeometry}
+            material={sunRayMaterial}
+            frustumCulled={false}
+            renderOrder={GALLERY_HALO_RENDER_ORDER}
+          />
+          <mesh
+            geometry={sunRayGeometry}
+            material={sunRayMaterial}
+            position={[0, 0, GALLERY_HALO_DARKEN_LAYER_Z]}
+            frustumCulled={false}
+            renderOrder={GALLERY_HALO_RENDER_ORDER}
+          />
+        </group>
       ) : null}
       <mesh
         ref={meshRef}
@@ -2624,8 +2779,8 @@ function GalleryScene({
   const { size } = useThree();
   const aspect = Math.max(size.width / Math.max(size.height, 1), 0.25);
   const { min: minZoomDistance, max: maxZoomDistance } = useMemo(
-    () => orbitZoomLimits(orbitFramingRadius, aspect),
-    [orbitFramingRadius, aspect],
+    () => orbitZoomLimits(ringRadius, aspect),
+    [ringRadius, aspect],
   );
   /** Açılışta 0 olunca ilk paint’te ayrım blend’i 0 kalıyordu; ~varsayılan orbit’e yakın. */
   const zoomFxRef = useRef({ zoomIn: 0.52, camAzimuth: 0 });
@@ -2652,6 +2807,11 @@ function GalleryScene({
           orbitControlsRef={orbitControlsRef}
           apiRef={orbitPhysicsApiRef}
         />
+      <GalleryParallaxBridge
+        orbitControlsRef={orbitControlsRef}
+        minDistance={minZoomDistance}
+        maxDistance={maxZoomDistance}
+      />
       <ZoomFrameSync
         minDistance={minZoomDistance}
         maxDistance={maxZoomDistance}
@@ -2682,17 +2842,17 @@ function GalleryScene({
         onStart={onSoftGalleryHint}
       />
       <RingCameraSync
-        ringRadius={orbitFramingRadius}
+        ringRadius={ringRadius}
         defaultDistanceT={orbitDefaultDistanceT}
       />
       <AdaptiveFovSync
-        ringRadius={orbitFramingRadius}
+        layoutRingRadius={ringRadius}
         minDistance={minZoomDistance}
         maxDistance={maxZoomDistance}
       />
       {GALLERY_SCENE_DEBUG ? (
         <GallerySceneDebugLogger
-          ringRadius={orbitFramingRadius}
+          ringRadius={ringRadius}
           minDistance={minZoomDistance}
           maxDistance={maxZoomDistance}
           logOnInteraction
@@ -3006,6 +3166,10 @@ export function Gallery3D({
 
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [selectedImage, setSelectedImage] = useState<GalleryImage | null>(null);
+  const galleryShellRef = useRef<HTMLDivElement>(null);
+  const [pointer, setPointer] = useState<{ x: number; y: number } | null>(
+    null,
+  );
 
   const selectedPortfolioCopy = useMemo(
     () =>
@@ -3022,6 +3186,7 @@ export function Gallery3D({
   const noopSoftGalleryHint = useCallback(() => {}, []);
 
   const orbitControlsRef = useRef<StdOrbitControls | null>(null);
+  const parallaxRef = useRef(DEFAULT_GALLERY_PARALLAX);
 
   const visibleIndices = useMemo(
     () => images.map((_, i) => i),
@@ -3049,18 +3214,14 @@ export function Gallery3D({
 
   const cameraWorldPos = useMemo((): [number, number, number] => {
     const aspect = defaultViewportAspect();
-    const { min, max } = orbitZoomLimits(orbitFramingRadius, aspect);
+    const { min, max } = orbitZoomLimits(ringRadius, aspect);
     const D = THREE.MathUtils.clamp(
-      baseOrbitCameraDistance(
-        orbitFramingRadius,
-        aspect,
-        orbitDefaultDistanceT,
-      ),
+      baseOrbitCameraDistance(ringRadius, aspect, orbitDefaultDistanceT),
       min,
       max,
     );
     return cameraTupleForOrbitDistance(D);
-  }, [orbitFramingRadius, orbitDefaultDistanceT]);
+  }, [ringRadius, orbitDefaultDistanceT]);
 
   const navigate = useNavigate();
   const location = useLocation();
@@ -3248,15 +3409,31 @@ export function Gallery3D({
     <div className="flex min-h-0 min-w-0 w-full flex-1 flex-col">
       <div className="flex min-h-0 w-full flex-1 flex-col px-0 pb-0 pt-0">
         <div
+          ref={galleryShellRef}
           className="relative min-h-[220px] w-full min-w-0 flex-1 basis-0 select-none bg-background sm:min-h-[240px]"
-            style={{
+          style={{
             touchAction: "none",
             backgroundImage: "var(--app-shell-gradient)",
             backgroundAttachment: "fixed",
           }}
+          onPointerMove={(e) => {
+            const el = galleryShellRef.current;
+            if (!el) return;
+            const rect = el.getBoundingClientRect();
+            setPointer({
+              x: e.clientX - rect.left,
+              y: e.clientY - rect.top,
+            });
+          }}
+          onPointerLeave={() => setPointer(null)}
         >
+          <GalleryParallaxContext.Provider value={parallaxRef}>
+            <GalleryMouseParticles
+              active={!detailModalOpen}
+              pointer={pointer}
+            />
           <Canvas
-            className="absolute inset-0 h-full w-full touch-none [transform:translateZ(0)]"
+            className="absolute inset-0 z-[1] h-full w-full touch-none [transform:translateZ(0)]"
             gl={{
               antialias: true,
               alpha: true,
@@ -3294,22 +3471,23 @@ export function Gallery3D({
           >
             <Suspense fallback={null}>
               <GalleryScene
-                images={images}
-                visibleIndices={visibleIndices}
-                ringRadius={ringRadius}
-                orbitFramingRadius={orbitFramingRadius}
-                cardScaleMuls={galleryCardScaleMuls}
-                orbitDefaultDistanceT={orbitDefaultDistanceT}
-                allCategoryLayout={allFibonacciShellLayout}
-                orbitControlsRef={orbitControlsRef}
-                hoveredIndex={hoveredIndex}
-                setHoveredIndex={setHoveredIndex}
-                modalOpen={detailModalOpen}
-                onPick={handlePick}
-                onSoftGalleryHint={noopSoftGalleryHint}
-              />
-            </Suspense>
+                  images={images}
+                  visibleIndices={visibleIndices}
+                  ringRadius={ringRadius}
+                  orbitFramingRadius={orbitFramingRadius}
+                  cardScaleMuls={galleryCardScaleMuls}
+                  orbitDefaultDistanceT={orbitDefaultDistanceT}
+                  allCategoryLayout={allFibonacciShellLayout}
+                  orbitControlsRef={orbitControlsRef}
+                  hoveredIndex={hoveredIndex}
+                  setHoveredIndex={setHoveredIndex}
+                  modalOpen={detailModalOpen}
+                  onPick={handlePick}
+                  onSoftGalleryHint={noopSoftGalleryHint}
+                />
+              </Suspense>
           </Canvas>
+          </GalleryParallaxContext.Provider>
         </div>
 
         <p
