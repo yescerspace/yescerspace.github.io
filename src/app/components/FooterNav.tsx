@@ -11,7 +11,7 @@ export function FooterNav() {
   const links = [
     { path: "/", label: nav.gallery },
     { path: "/about", label: nav.about },
-    { path: "/contact", label: nav.contact },
+    { path: "/connect", label: nav.contact },
   ];
 
   return (
@@ -29,6 +29,7 @@ export function FooterNav() {
             const isWorkDetail =
               segs.length === 2 &&
               segs[0] !== "about" &&
+              segs[0] !== "connect" &&
               segs[0] !== "contact";
             const active =
               link.path === "/"

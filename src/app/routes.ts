@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, redirect } from "react-router";
 import { Layout } from "./components/Layout";
 import { Works } from "./pages/Works";
 import { About } from "./pages/About";
@@ -11,7 +11,9 @@ const routes = [
     children: [
       { index: true, Component: Works },
       { path: "about", Component: About },
-      { path: "contact", Component: Contact },
+      { path: "connect", Component: Contact },
+      /** Legacy bookmark — `/contact` → `/connect`. */
+      { path: "contact", loader: () => redirect("/connect") },
       /** Portfolio piece deep link, e.g. `/work/3` — must stay after static segments. */
       { path: ":categoryFolder/:slug", Component: Works },
     ],

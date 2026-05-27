@@ -13,9 +13,13 @@ function LayoutShell() {
   const isGalleryDetail =
     pathSegments.length === 2 &&
     pathSegments[0] !== "about" &&
+    pathSegments[0] !== "connect" &&
     pathSegments[0] !== "contact";
   const isGallery = pathname === "/" || isGalleryDetail;
-  const isAboutOrContact = pathname === "/about" || pathname === "/contact";
+  const isAboutOrContact =
+    pathname === "/about" ||
+    pathname === "/connect" ||
+    pathname === "/contact";
 
   useEffect(() => {
     document.title = messages.layout.documentTitle;
