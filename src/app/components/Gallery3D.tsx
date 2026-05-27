@@ -851,14 +851,22 @@ const GALLERY_GROUP_WORLD_SCALE = 1.22;
 const ADAPTIVE_FOV_AT_MIN_DISTANCE = 54;
 const ADAPTIVE_FOV_AT_MAX_DISTANCE = 58;
 const ADAPTIVE_FOV_ABSOLUTE_CAP = 76;
+/** Mobil/portrait: yakın zoom’da kırpmayı azaltmak için biraz daha yüksek cap. */
+const ADAPTIVE_FOV_ABSOLUTE_CAP_MOBILE = 84;
 /** Exponential smoothing for FOV follow (~0.08–0.12 effective step at 60fps) */
 const ADAPTIVE_FOV_SMOOTHING = 9.5;
 /** Geometrik min’in altı — tüm kabuk kadrajı (uzak zoom-out üst sınırı için de kullanılır). */
 const ORBIT_MIN_DISTANCE_RELAX = 0.52;
+/** Mobil/portrait: daha yakına zoom (kabuk kadrajı). */
+const ORBIT_MIN_DISTANCE_RELAX_MOBILE = 0.44;
 /** İç halka / merkez gezegene yakın zoom — tam kabuktan bağımsız. */
 const ORBIT_HUB_MIN_DISTANCE_RELAX = 0.5;
+/** Mobil/portrait: merkez gezegene daha yakına zoom. */
+const ORBIT_HUB_MIN_DISTANCE_RELAX_MOBILE = 0.42;
 /** Max orbit distance as a multiple of full-shell relaxed min */
 const ORBIT_MAX_DISTANCE_RATIO = 2.12;
+/** Mobil/portrait: biraz daha geniş zoom-out aralığı. */
+const ORBIT_MAX_DISTANCE_RATIO_MOBILE = 2.35;
 /**
  * Initial camera distance between min and max (0 = closest zoom, 1 = farthest).
  * Higher = calmer opening frame; scroll still reaches `min`.
@@ -1016,6 +1024,7 @@ function orbitZoomLimits(
   layoutRingRadius: number,
   aspect: number,
 ): { min: number; max: number } {
+  const isPortraitMobile = aspect < 0.78;
   const framingRadius = layoutRingRadius * ALL_CLOUD_FRAMING_RADIUS_MULT;
   const geometricMinFull = minSafeOrbitDistance(
     framingRadius,
@@ -1027,13 +1036,20 @@ function orbitZoomLimits(
     CAMERA_FOV,
     aspect,
   );
-  const minFullRelaxed = geometricMinFull * ORBIT_MIN_DISTANCE_RELAX;
-  const minHubRelaxed = geometricMinHub * ORBIT_HUB_MIN_DISTANCE_RELAX;
+  const minFullRelaxed =
+    geometricMinFull *
+    (isPortraitMobile ? ORBIT_MIN_DISTANCE_RELAX_MOBILE : ORBIT_MIN_DISTANCE_RELAX);
+  const minHubRelaxed =
+    geometricMinHub *
+    (isPortraitMobile
+      ? ORBIT_HUB_MIN_DISTANCE_RELAX_MOBILE
+      : ORBIT_HUB_MIN_DISTANCE_RELAX);
   const floor =
     layoutRingRadius * GALLERY_GROUP_WORLD_SCALE * 0.12 * FRAMING_CLOUD_EXTENT_PAD;
   const min = Math.max(Math.min(minFullRelaxed, minHubRelaxed), floor);
   const max = Math.max(
-    minFullRelaxed * ORBIT_MAX_DISTANCE_RATIO,
+    minFullRelaxed *
+      (isPortraitMobile ? ORBIT_MAX_DISTANCE_RATIO_MOBILE : ORBIT_MAX_DISTANCE_RATIO),
     min * 1.35,
   );
   return { min, max };
@@ -1150,6 +1166,7 @@ function AdaptiveFovSync({
     const span = Math.max(maxDistance - minDistance, 1e-5);
     const u = THREE.MathUtils.clamp((dist - minDistance) / span, 0, 1);
     const zoomT = u * u * (3 - 2 * u);
+    const isPortraitMobile = aspect < 0.78;
     const framingExtents: FramingExtents = {
       radialMax: THREE.MathUtils.lerp(
         hubExtents.radialMax,
@@ -1176,7 +1193,7 @@ function AdaptiveFovSync({
 
     const targetFov = Math.min(
       Math.max(cinematic, floorFov),
-      ADAPTIVE_FOV_ABSOLUTE_CAP,
+      isPortraitMobile ? ADAPTIVE_FOV_ABSOLUTE_CAP_MOBILE : ADAPTIVE_FOV_ABSOLUTE_CAP,
     );
 
     const alpha = 1 - Math.exp(-ADAPTIVE_FOV_SMOOTHING * delta);

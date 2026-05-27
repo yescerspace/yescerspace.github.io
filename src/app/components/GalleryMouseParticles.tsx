@@ -520,6 +520,7 @@ export function GalleryMouseParticles({
   const rafRef = useRef(0);
   const lastFrameRef = useRef(0);
   const reducedMotionRef = useRef(false);
+  const coarsePointerRef = useRef(false);
 
   pointerRef.current = pointer;
 
@@ -542,6 +543,16 @@ export function GalleryMouseParticles({
   }, []);
 
   useEffect(() => {
+    const mq = window.matchMedia("(pointer: coarse)");
+    coarsePointerRef.current = mq.matches;
+    const onChange = () => {
+      coarsePointerRef.current = mq.matches;
+    };
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
     const bgCanvas = bgCanvasRef.current;
     const fgCanvas = fgCanvasRef.current;
     if (!bgCanvas || !fgCanvas) return;
@@ -552,7 +563,8 @@ export function GalleryMouseParticles({
       const w = parent.clientWidth;
       const h = parent.clientHeight;
       if (w < 1 || h < 1) return;
-      const dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP);
+      const dprCap = coarsePointerRef.current ? 1.5 : DPR_CAP;
+      const dpr = Math.min(window.devicePixelRatio || 1, dprCap);
       for (const canvas of [bgCanvas, fgCanvas]) {
         canvas.width = Math.floor(w * dpr);
         canvas.height = Math.floor(h * dpr);
@@ -592,7 +604,8 @@ export function GalleryMouseParticles({
     const fgCtx = fgCanvas.getContext("2d");
     if (!bgCtx || !fgCtx) return;
 
-    const dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP);
+    const dprCap = coarsePointerRef.current ? 1.5 : DPR_CAP;
+    const dpr = Math.min(window.devicePixelRatio || 1, dprCap);
     lastFrameRef.current = performance.now();
 
     const tick = (now: number) => {
