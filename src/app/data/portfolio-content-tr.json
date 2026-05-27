@@ -66,10 +66,10 @@
     "tools": ""
   },
   "work/12": {
-    "title": "Yeni proje 2 --",
-    "description": "Yer tutucu — başlık, açıklama ve medyayı gallery/12/ içinde güncelleyin.",
-    "year": "",
-    "tools": ""
+    "title": "Audio-reactive RGB Exploration",
+    "description": "Daha iyi bir deneyim için sesi açmanız önerilir.\n\nKatmanlı RGBA renk yapıları, deneysel hareket sistemleri ve sentetik mekânsal algı üzerinden yarı saydam, ses tepkili bilgisayar grafiklerini araştıran devam eden bir gerçek zamanlı görsel-işitsel seri. Her çalışma; frekans, ritim ve tonal katmanları gerçek zamanlı dinamik görsel etkileşimlere dönüştürerek ses ile görsel davranış arasındaki ilişkiyi inceler. Büyük yatay LED ekranlar için tasarlanan proje; creative coding, motion design ve generatif görsel deneyleri bir araya getirerek immersif görsel-işitsel deneyimler üretir.",
+    "year": "2026",
+    "tools": "Touch Designer, Adobe Premiere Pro"
   },
   "work/13": {
     "title": "Yeni proje 3 --",

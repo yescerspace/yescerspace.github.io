@@ -50,7 +50,11 @@ import {
   primaryGalleryTextureUrl,
   withGalleryAssetCacheBust,
 } from "../utils/galleryMedia";
-import { galleryYearScaleFactorsForProjectKeys } from "../utils/galleryPlanetYearScale";
+import {
+  GALLERY_YEAR_PLANET_SCALE_MAX,
+  GALLERY_YEAR_PLANET_SCALE_MIN,
+  galleryYearScaleFactorsForProjectKeys,
+} from "../utils/galleryPlanetYearScale";
 import {
   normalizeManifestKeyPart,
   projectKeyFromParts,
@@ -161,6 +165,7 @@ function syncDetailVideoPlayback(
   failed: Record<string, boolean>,
   itemEls: readonly (HTMLElement | null)[],
   videoEls: readonly (HTMLVideoElement | null)[],
+  forcedPlayIndex: number | null = null,
 ): void {
   const firstUrl = detailUrls[0];
   const firstIsVideo =
@@ -174,9 +179,21 @@ function syncDetailVideoPlayback(
 
   let playIndex = -1;
 
-  if (firstIsVideo && scrollEl.scrollTop < DETAIL_FIRST_VIDEO_SCROLL_TOP_MAX) {
+  if (forcedPlayIndex != null) {
+    const u = detailUrls[forcedPlayIndex];
+    if (u && !failed[u] && isVideoUrl(srcFor(u))) {
+      playIndex = forcedPlayIndex;
+    }
+  }
+
+  if (
+    playIndex < 0 &&
+    firstIsVideo &&
+    scrollEl.scrollTop < DETAIL_FIRST_VIDEO_SCROLL_TOP_MAX
+  ) {
     playIndex = 0;
-  } else {
+  }
+  if (playIndex < 0) {
     let bestI = -1;
     let bestDist = Infinity;
     for (let i = 0; i < detailUrls.length; i++) {
@@ -203,11 +220,13 @@ function syncDetailVideoPlayback(
     const u = detailUrls[i];
     if (!u || failed[u] || !isVideoUrl(srcFor(u))) continue;
     if (i === playIndex) {
+      v.muted = false;
       if (videoCanShowFrame(v)) {
         void v.play().catch(() => {});
       }
     } else {
       v.pause();
+      v.muted = true;
     }
   }
 }
@@ -1665,6 +1684,8 @@ interface GallerySceneProps {
    * Gezegen ölçeği — `images[i]` ile aynı uzunluk; yıl (portfolio EN) ile en yeni = en büyük.
    */
   cardScaleMuls: readonly number[];
+  /** Yıla göre ölçek faktörü (min..max) — başlangıç derinlik dağılımında da kullanılır. */
+  yearScaleFactors: readonly number[];
   /** Initial orbit distance lerp (RingCameraSync + Canvas open frame). */
   orbitDefaultDistanceT: number;
   /** Fibonacci shell + drift (full gallery always uses this layout). */
@@ -1683,6 +1704,7 @@ function GalleryCardMesh({
   visibleCount,
   radius,
   cardScaleMul,
+  yearScaleFactor,
   satelliteFloat,
   allCategoryLayout,
   hovered,
@@ -1699,6 +1721,8 @@ function GalleryCardMesh({
   radius: number;
   /** Multiplier on {@link CARD_MESH_BASE_SCALE} (cloud disc layout). */
   cardScaleMul: number;
+  /** Year-derived factor (newer -> larger) for depth balance on first load. */
+  yearScaleFactor: number;
   /** Cloud shell: Fibonacci positions + drift (same for “All” and single categories). */
   satelliteFloat: boolean;
   /** “All” kategorisi: yatay / rastgele dağılım. */
@@ -1989,6 +2013,22 @@ uniform vec3 uCoverGlow;`,
     smoothHoverYRef.current = yHover;
 
     const depth = ZOOM_DEPTH_PULL * ziLayout;
+    const recencyT = THREE.MathUtils.clamp(
+      (yearScaleFactor - GALLERY_YEAR_PLANET_SCALE_MIN) /
+        Math.max(
+          GALLERY_YEAR_PLANET_SCALE_MAX - GALLERY_YEAR_PLANET_SCALE_MIN,
+          1e-6,
+        ),
+      0,
+      1,
+    );
+    const recencyDepthMul = THREE.MathUtils.lerp(0.72, 1.08, recencyT);
+    const ageRetreat = THREE.MathUtils.lerp(0.026, 0, recencyT);
+    const legacyRetreat = image.projectKey === "work/2" ? 0.028 : 0;
+    const towardCameraDepth = Math.max(
+      0,
+      depth * recencyDepthMul - ageRetreat - legacyRetreat,
+    );
 
     let px: number;
     let pz: number;
@@ -2092,9 +2132,9 @@ uniform vec3 uCoverGlow;`,
       _toCamera.y *= ZOOM_TO_CAM_Y_DAMP;
       _toCamera.normalize();
 
-      let basePx = cx + _toCamera.x * depth;
-      let basePy = cy + _toCamera.y * depth * ZOOM_TO_CAM_Y_DAMP;
-      let basePz = cz + _toCamera.z * depth;
+      let basePx = cx + _toCamera.x * towardCameraDepth;
+      let basePy = cy + _toCamera.y * towardCameraDepth * ZOOM_TO_CAM_Y_DAMP;
+      let basePz = cz + _toCamera.z * towardCameraDepth;
       /** Yakın zoom’da merkeze sıkıştır — dağılmayı azaltır. */
       const cloudCompact = THREE.MathUtils.lerp(0.985, 0.93, ziLayout);
       basePx *= cloudCompact;
@@ -2175,8 +2215,8 @@ uniform vec3 uCoverGlow;`,
       _toCamera.y *= ZOOM_TO_CAM_Y_DAMP;
       _toCamera.normalize();
 
-      let basePx = bx + _toCamera.x * depth;
-      let basePz = bz + _toCamera.z * depth;
+      let basePx = bx + _toCamera.x * towardCameraDepth;
+      let basePz = bz + _toCamera.z * towardCameraDepth;
       basePx *= RING_RADIAL_COMPACT;
       basePz *= RING_RADIAL_COMPACT;
 
@@ -2771,6 +2811,7 @@ function GalleryScene({
   ringRadius,
   orbitFramingRadius,
   cardScaleMuls,
+  yearScaleFactors,
   orbitDefaultDistanceT,
   allCategoryLayout,
   orbitControlsRef,
@@ -2784,6 +2825,29 @@ function GalleryScene({
   const satelliteFloat = true;
   const autoRotateSpeed =
     visibleCount >= 2 ? AUTO_ROTATE_SPEED_MANY : AUTO_ROTATE_SPEED;
+  const swappedSlotsByImageIndex = useMemo(() => {
+    const byIndex = new Map<number, number>();
+    const slotByProjectKey = new Map<string, number>();
+    visibleIndices.forEach((imageIndex, slot) => {
+      const img = images[imageIndex];
+      if (!img) return;
+      slotByProjectKey.set(img.projectKey, slot);
+      byIndex.set(imageIndex, slot);
+    });
+    const swapProjects = (a: string, b: string) => {
+      const slotA = slotByProjectKey.get(a);
+      const slotB = slotByProjectKey.get(b);
+      if (slotA == null || slotB == null) return;
+      const idxA = visibleIndices[slotA];
+      const idxB = visibleIndices[slotB];
+      if (idxA == null || idxB == null) return;
+      byIndex.set(idxA, slotB);
+      byIndex.set(idxB, slotA);
+    };
+    swapProjects("work/2", "work/12");
+    swapProjects("work/7", "work/8");
+    return byIndex;
+  }, [images, visibleIndices]);
 
   const sunBurstTex = useTexture(gallerySunRayAssetUrl);
   useLayoutEffect(() => {
@@ -2885,14 +2949,17 @@ function GalleryScene({
           const image = images[imageIndex];
           if (!image) return null;
           const cardScaleMul = cardScaleMuls[imageIndex] ?? 1;
+          const yearScaleFactor = yearScaleFactors[imageIndex] ?? 1;
+          const mappedSlot = swappedSlotsByImageIndex.get(imageIndex) ?? slot;
           return (
             <GalleryCardMesh
               key={`card-${imageIndex}`}
               image={image}
-              slot={slot}
+              slot={mappedSlot}
               visibleCount={visibleIndices.length}
               radius={ringRadius}
               cardScaleMul={cardScaleMul}
+              yearScaleFactor={yearScaleFactor}
               satelliteFloat={satelliteFloat}
               allCategoryLayout={allCategoryLayout}
               hovered={hoveredIndex === imageIndex}
@@ -2947,6 +3014,7 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
   );
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
+  const forcedPlayIndexRef = useRef<number | null>(null);
 
   const detailUrlsKey = useMemo(() => detailUrls.join("\0"), [detailUrls]);
   const heroUrl = useMemo(() => primaryGalleryTextureUrl(urls), [urls]);
@@ -2993,6 +3061,7 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
       failed,
       itemRefs.current,
       videoRefs.current,
+      forcedPlayIndexRef.current,
     );
   }, [detailUrls, srcFor, failed]);
 
@@ -3008,7 +3077,25 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
   useLayoutEffect(() => {
     itemRefs.current.length = detailUrls.length;
     videoRefs.current.length = detailUrls.length;
+    forcedPlayIndexRef.current = null;
   }, [detailUrls.length]);
+
+  useEffect(() => {
+    const onFullscreenChanged = () => {
+      const fsEl = document.fullscreenElement;
+      if (!fsEl) {
+        forcedPlayIndexRef.current = null;
+        schedulePlaybackSync();
+        return;
+      }
+      const idx = videoRefs.current.findIndex((v) => v === fsEl);
+      forcedPlayIndexRef.current = idx >= 0 ? idx : null;
+      schedulePlaybackSync();
+    };
+    document.addEventListener("fullscreenchange", onFullscreenChanged);
+    return () =>
+      document.removeEventListener("fullscreenchange", onFullscreenChanged);
+  }, [schedulePlaybackSync]);
 
   useEffect(() => {
     return () => {
@@ -3132,6 +3219,22 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
                     schedulePlaybackSync();
                   }}
                   onCanPlay={schedulePlaybackSync}
+                  onPlay={() => {
+                    if (
+                      forcedPlayIndexRef.current != null &&
+                      forcedPlayIndexRef.current !== i
+                    ) {
+                      return;
+                    }
+                    forcedPlayIndexRef.current = i;
+                    schedulePlaybackSync();
+                  }}
+                  onPause={() => {
+                    if (forcedPlayIndexRef.current === i) {
+                      forcedPlayIndexRef.current = null;
+                    }
+                    schedulePlaybackSync();
+                  }}
                   onError={() => {
                     setFailed((f) => ({ ...f, [url]: true }));
                     markDetailMediaReady(url);
@@ -3221,13 +3324,15 @@ export function Gallery3D({
 
   const orbitDefaultDistanceT = DEFAULT_ORBIT_DISTANCE_T;
 
+  const galleryYearScaleFactors = useMemo(
+    () => galleryYearScaleFactorsForProjectKeys(images.map((img) => img.projectKey)),
+    [images],
+  );
+
   const galleryCardScaleMuls = useMemo(() => {
     const base = ALL_CLOUD_LAYOUT_SCALE * GALLERY_COVER_GLOBAL_SCALE;
-    const factors = galleryYearScaleFactorsForProjectKeys(
-      images.map((img) => img.projectKey),
-    );
-    return factors.map((f) => base * f);
-  }, [images]);
+    return galleryYearScaleFactors.map((f) => base * f);
+  }, [galleryYearScaleFactors]);
 
   const cameraWorldPos = useMemo((): [number, number, number] => {
     const aspect = defaultViewportAspect();
@@ -3493,6 +3598,7 @@ export function Gallery3D({
                   ringRadius={ringRadius}
                   orbitFramingRadius={orbitFramingRadius}
                   cardScaleMuls={galleryCardScaleMuls}
+                  yearScaleFactors={galleryYearScaleFactors}
                   orbitDefaultDistanceT={orbitDefaultDistanceT}
                   allCategoryLayout={allFibonacciShellLayout}
                   orbitControlsRef={orbitControlsRef}

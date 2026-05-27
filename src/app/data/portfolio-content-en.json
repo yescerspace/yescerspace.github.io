@@ -78,10 +78,10 @@
   },
   "work/12": {
     "category": "New",
-    "title": "New project 2 --",
-    "description": "Placeholder — replace title, description, and media in gallery/12/.",
-    "year": "",
-    "tools": ""
+    "title": "Audio-reactive RGB Exploration",
+    "description": "For a better experience, sound on recommended.\n\nAn ongoing real-time audiovisual series exploring translucent, audio-reactive computer graphics through layered RGBA color structures, experimental motion systems, and synthetic spatial perception. Each piece investigates the relationship between sound and visual behavior by translating frequencies, rhythm, and tonal layers into dynamic visual interactions in real time. Primarily designed for large-scale horizontal LED screens, the project combines creative coding, motion design, and generative visual experimentation to create immersive audiovisual experiences.",
+    "year": "2026",
+    "tools": "Touch Designer, Adobe Premiere Pro"
   },
   "work/13": {
     "category": "New",
