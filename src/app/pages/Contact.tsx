@@ -1,17 +1,30 @@
 import { useCallback, useState } from "react";
 import { motion } from "motion/react";
 import { useLanguage } from "../context/LanguageContext";
-import { CONTACT_EMAIL, FORMSPREE_ENDPOINT } from "../config/contact";
+import {
+  ARTSTATION_PROFILE_URL,
+  BEHANCE_PROFILE_URL,
+  CONTACT_EMAIL,
+  FORMSPREE_ENDPOINT,
+} from "../config/contact";
 import { cn } from "../components/ui/utils";
+import artstationIconUrl from "../assets/artstation.png?url";
+import behanceIconUrl from "../assets/behance.png?url";
 
 const fieldClass =
   "mt-1.5 w-full rounded-lg border border-border bg-input-background px-3 py-2.5 text-sm text-foreground outline-none transition-[box-shadow,border-color] placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/25";
 
 const labelClass = "block text-[0.8rem] font-medium text-foreground/85";
 
+/** Mailto + social icon links — shared height and primary colors. */
+const contactCtaShellClass =
+  "inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md bg-primary py-1 text-primary-foreground transition-[background-color,border-color,color,opacity] duration-200 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.98]";
+
 /** Mailto CTA — primary slab. */
-const emailMailtoPrimaryClass =
-  "inline-flex min-w-[8.5rem] shrink-0 cursor-pointer items-center justify-center rounded-md bg-primary px-2 py-1 text-xs font-medium tracking-wide text-primary-foreground transition-[background-color,border-color,color,opacity] duration-200 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.98]";
+const emailMailtoPrimaryClass = cn(
+  contactCtaShellClass,
+  "min-w-[8.5rem] px-2 text-xs font-medium tracking-wide",
+);
 
 /** Mailto tıklanınca Copy “Copied!” ile aynı görünüm (metin değişmez). */
 const emailMailtoAckClass =
@@ -23,6 +36,39 @@ const emailCopyPrimaryClass =
 
 const emailCopyChipClass =
   "inline-flex w-[8rem] shrink-0 items-center justify-center rounded-md border border-border bg-muted/50 px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+
+/** Pre-colored logo PNGs — no tint/background overlay. */
+const contactSocialIconLinkClass =
+  "inline-flex shrink-0 rounded-md transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+
+function ContactSocialIconLink({
+  href,
+  ariaLabel,
+  iconUrl,
+}: {
+  href: string;
+  ariaLabel: string;
+  iconUrl: string;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={ariaLabel}
+      className={contactSocialIconLinkClass}
+    >
+      <img
+        src={iconUrl}
+        alt=""
+        width={28}
+        height={28}
+        className="h-7 w-7 object-contain"
+        decoding="async"
+      />
+    </a>
+  );
+}
 
 export function Contact() {
   const { messages } = useLanguage();
@@ -98,10 +144,20 @@ export function Contact() {
                 >
                   {emailCopied ? c.emailCopiedFeedback : c.copyEmail}
                 </button>
-                <span className="min-w-0 break-all italic text-muted-foreground select-all">
-                  {CONTACT_EMAIL}
-                </span>
               </span>
+            </div>
+            {/* Two lines under the CTA row */}
+            <div className="mt-5 flex items-center gap-3.5">
+              <ContactSocialIconLink
+                href={ARTSTATION_PROFILE_URL}
+                ariaLabel={c.artStationProfileAriaLabel}
+                iconUrl={artstationIconUrl}
+              />
+              <ContactSocialIconLink
+                href={BEHANCE_PROFILE_URL}
+                ariaLabel={c.behanceProfileAriaLabel}
+                iconUrl={behanceIconUrl}
+              />
             </div>
           </div>
         </div>

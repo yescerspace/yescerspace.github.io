@@ -127,6 +127,8 @@ export type TranslationMessages = {
     emailInlineOr: string;
     copyEmail: string;
     emailCopiedFeedback: string;
+    artStationProfileAriaLabel: string;
+    behanceProfileAriaLabel: string;
     rolesLine: string;
     nameLabel: string;
     emailLabel: string;
@@ -245,8 +247,10 @@ const en: TranslationMessages = {
     description: "",
     emailCta: "Email Me",
     emailInlineOr: "or",
-    copyEmail: "Copy",
+    copyEmail: "Copy Email",
     emailCopiedFeedback: "Copied!",
+    artStationProfileAriaLabel: "ArtStation profile (opens in new tab)",
+    behanceProfileAriaLabel: "Behance profile (opens in new tab)",
     rolesLine: "",
     nameLabel: "Name",
     emailLabel: "Email",
@@ -325,8 +329,10 @@ const de: TranslationMessages = {
     description: "",
     emailCta: "E-Mail schreiben",
     emailInlineOr: "oder",
-    copyEmail: "Kopieren",
+    copyEmail: "E-Mail kopieren",
     emailCopiedFeedback: "Kopiert!",
+    artStationProfileAriaLabel: "ArtStation-Profil (öffnet in neuem Tab)",
+    behanceProfileAriaLabel: "Behance-Profil (öffnet in neuem Tab)",
     rolesLine: "",
     nameLabel: "Name",
     emailLabel: "E-Mail",
@@ -405,8 +411,10 @@ const tr: TranslationMessages = {
     description: "",
     emailCta: "E-posta gönder",
     emailInlineOr: "veya",
-    copyEmail: "Kopyala",
+    copyEmail: "E-postayı kopyala",
     emailCopiedFeedback: "Kopyalandı!",
+    artStationProfileAriaLabel: "ArtStation profili (yeni sekmede açılır)",
+    behanceProfileAriaLabel: "Behance profili (yeni sekmede açılır)",
     rolesLine: "",
     nameLabel: "Ad",
     emailLabel: "E-posta",

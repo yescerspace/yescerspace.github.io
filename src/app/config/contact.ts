@@ -11,3 +11,6 @@ export const CONTACT_EMAIL =
 export const FORMSPREE_ENDPOINT = (
   import.meta.env.VITE_FORMSPREE_ENDPOINT as string | undefined
 )?.trim();
+
+export const ARTSTATION_PROFILE_URL = "https://www.artstation.com/yesimceren";
+export const BEHANCE_PROFILE_URL = "https://www.behance.net/yesimceren";
