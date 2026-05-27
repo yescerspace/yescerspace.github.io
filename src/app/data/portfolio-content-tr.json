@@ -7,7 +7,7 @@
   },
   "work/2": {
     "title": "3D Karakter Özelleştirme ve Animasyon",
-    "description": "3D karakter kostümleri ve oyun içi görsel varlıkların oluşturulmasından sorumluydum. Blender’da tam 3D kostüm üretimi, ardından UV açma, mesh optimizasyonu ve oyun içi deformasyon için skin-weight boyama. Dokulama Substance 3D Painter ile tamamlandı; malzeme tutarlılığı ve görsel netlik öncelikliydi. Buna ek olarak düğme, ekran ve etkileşimli öğeler gibi 2D varlıklara — illüstrasyon, doku ve UI bileşenlerine — katkı sağladım; 30’dan fazla mobil oyun seviyesi ve 100’ün üzerinde karakterde görsel bütünlük sağlandı. Fashion Battle (120M+ indirme) üretiminde moda konsepti, 3D modelleme, dokulama ve UI ile ilgili görsel tasarımda kilit rol oynadım. Üretimin yanı sıra oynanış testlerine katıldım; mekanikler, görsel tasarım ve kullanıcı deneyimi hakkında geri bildirim verdim. Geliştirme, tasarım ve prodüksiyon ekipleriyle kalite, tutarlılık ve varlıkların ürüne sorunsuz entegrasyonu için yakın çalıştım.",
+    "description": "3D karakter kostümleri ve oyun içi varlıkların üretiminden sorumluydum; Blender ve Substance 3D Painter kullanarak modelleme, UV açılımı, optimizasyon, skin-weight boyama ve texturing süreçlerini yürüttüm. Ayrıca 30’dan fazla mobil oyun seviyesi ve 100+ karakter boyunca görsel tutarlılığı korumak adına 2D asset, UI görselleri ve illüstrasyon üretimine katkıda bulundum. Fashion Battle’ın (120M+ indirme) üretim sürecinde önemli rol alarak tasarım, yazılım ve prodüksiyon ekipleriyle yakın çalıştım; aynı zamanda playtest, UX geri bildirimi ve kalite kontrol süreçlerine katkı sağladım.",
     "year": "2021-2024",
     "tools": "Unity, Blender, Substance 3D Painter, Adobe Photoshop & Premiere Pro"
   },
