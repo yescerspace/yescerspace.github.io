@@ -605,6 +605,14 @@ function galleryProjectShellSeparation(
   if (projectKey === "work/8") {
     return { angleRad: 0.1, yMul: 0.05, radialMul: 0.84 };
   }
+  /** Eski iş — kameradan uzak, dış kabukta kalsın. */
+  if (projectKey === "work/2") {
+    return { angleRad: 0.62, yMul: 0.08, radialMul: 1.22 };
+  }
+  /** Yeni iş — görünür bölgede, merkeze yapışmasın. */
+  if (projectKey === "work/12") {
+    return { angleRad: -0.42, yMul: -0.12, radialMul: 1.08 };
+  }
   return { angleRad: 0, yMul: 0, radialMul: 1 };
 }
 
@@ -614,7 +622,6 @@ function galleryProjectRadialPull(projectKey: string): number {
   }
   /** Dış kabukta kopuk kalanlar — merkeze doğru (0–1, pozisyon × (1 − pull)). */
   if (
-    projectKey === "work/2" ||
     projectKey === "work/3" ||
     projectKey === "work/6" ||
     projectKey === "work/7" ||
@@ -2023,8 +2030,8 @@ uniform vec3 uCoverGlow;`,
       1,
     );
     const recencyDepthMul = THREE.MathUtils.lerp(0.72, 1.08, recencyT);
-    const ageRetreat = THREE.MathUtils.lerp(0.026, 0, recencyT);
-    const legacyRetreat = image.projectKey === "work/2" ? 0.028 : 0;
+    const ageRetreat = THREE.MathUtils.lerp(0.055, 0, recencyT);
+    const legacyRetreat = image.projectKey === "work/2" ? 0.09 : 0;
     const towardCameraDepth = Math.max(
       0,
       depth * recencyDepthMul - ageRetreat - legacyRetreat,
