@@ -6,17 +6,18 @@ import {
   type GalleryParallaxState,
 } from "./galleryParallax";
 
-const BG_PARTICLE_COUNT = 100;
+const BG_PARTICLE_COUNT = 295;
 const TRAIL_POOL_SIZE = 3600;
-const POOL_SIGNATURE = "bg-cluster-v18-no-planet-ring";
+const POOL_SIGNATURE = "bg-cluster-v23-denser-bg";
 /** Gezegen hover canvas halkası (PNG seçim halkası ayrı). */
 const ENABLE_PLANET_RING_PARTICLES = false;
 
 /** Arka plan yıldızları — ince toz. */
 const DUST_SIZE_MIN = 0.28;
 const DUST_SIZE_MAX = 0.58;
-const DUST_OPACITY_MIN = 0.22;
-const DUST_OPACITY_MAX = 0.92;
+const DUST_OPACITY_MIN = 0.4;
+const DUST_OPACITY_MAX = 1;
+const BG_DRAW_OPACITY_BOOST = 1.26;
 
 /** Gezegen halkası — referans efekt3: daha büyük, yumuşak gri-beyaz noktalar. */
 const RING_DUST_SIZE_MIN = 0.32;
@@ -105,9 +106,9 @@ function clamp01(v: number): number {
 
 function randomDustOpacity(): number {
   const u = Math.random();
-  if (u < 0.35) return rand(DUST_OPACITY_MIN, 0.45);
-  if (u < 0.7) return rand(0.42, 0.72);
-  return rand(0.68, DUST_OPACITY_MAX);
+  if (u < 0.35) return rand(DUST_OPACITY_MIN, 0.58);
+  if (u < 0.7) return rand(0.56, 0.86);
+  return rand(0.8, DUST_OPACITY_MAX);
 }
 
 function randomDustSize(): number {
@@ -325,7 +326,7 @@ function initBgParticle(): Partial<Particle> {
     tint: Math.random() < 0.7 ? 0 : Math.floor(rand(1, 4)),
     size: randomDustSize(),
     opacity: randomDustOpacity(),
-    opacityMul: rand(0.75, 1.12),
+    opacityMul: rand(0.95, 1.3),
     life: rand(12, 30),
     maxLife: rand(18, 36),
   };
@@ -807,11 +808,15 @@ export function GalleryMouseParticles({
             drawY = projected.y;
             drawSize = p.size * projected.sizeMul;
             const twinkle =
-              (0.82 + 0.18 * clamp01(p.life / p.maxLife)) *
+              (0.92 + 0.08 * clamp01(p.life / p.maxLife)) *
               (p.opacityMul ?? 1);
             alpha =
-              p.opacity * twinkle * (0.82 + 0.18 * projected.depthAlpha);
+              p.opacity *
+              twinkle *
+              (0.92 + 0.08 * projected.depthAlpha) *
+              BG_DRAW_OPACITY_BOOST;
             if (reduced) alpha *= 0.85;
+            alpha = Math.min(alpha, 1);
             fill = dustColor(p.tint, alpha);
           } else if (p.kind === "ring") {
             if (p.life <= 0) continue;
