@@ -66,6 +66,29 @@ function hashFile(p) {
   return h.digest("hex");
 }
 
+/** GitHub Pages branch deploy does not smudge LFS — large videos use media CDN (same repo blob). */
+const GITHUB_MEDIA_REPO = "yesimcerenunal/yesimcerenunal.github.io";
+const GITHUB_MEDIA_REF = "main";
+const LARGE_VIDEO_MB = 95;
+
+function manifestImagePath(relDir, file, srcDir, dstDir) {
+  const relPath = `${relDir.replace(/\\/g, "/")}/${file}`;
+  const abs =
+    fs.existsSync(path.join(srcDir, file)) ?
+      path.join(srcDir, file)
+    : path.join(dstDir, file);
+  if (/\.mp4$/i.test(file) && fs.existsSync(abs)) {
+    const mb = fs.statSync(abs).size / (1024 * 1024);
+    if (mb > LARGE_VIDEO_MB) {
+      const publicPath = relPath.startsWith("gallery/") ?
+        `public/${relPath}`
+      : relPath;
+      return `https://media.githubusercontent.com/media/${GITHUB_MEDIA_REPO}/${GITHUB_MEDIA_REF}/${publicPath}`;
+    }
+  }
+  return relPath;
+}
+
 const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 const actions = [];
 
@@ -144,8 +167,10 @@ for (const proj of manifest.projects) {
   ).filter(
     (f) => !isVideoPosterCompanionFilename(f) && !isGalleryAuxMediaFilename(f),
   );
-  const prefix = `${rel.replace(/\\/g, "/")}/`;
-  proj.images = finalList.map((file) => `${prefix}${file}`.replace(/\\/g, "/"));
+  const relDir = rel.replace(/\\/g, "/");
+  proj.images = finalList.map((file) =>
+    manifestImagePath(relDir, file, srcDir, dstDir),
+  );
 }
 
 manifest.lastUpdated = new Date().toISOString();

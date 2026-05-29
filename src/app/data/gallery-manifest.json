@@ -1,7 +1,7 @@
 {
   "sourceOfTruth": "Flat layout: disk gallery/<n>/ for numbered slots; manifest projectKey work/<n>. hidden: true = galeride yok; false veya yok = görünür (work/2 şimdilik true). Taslak: slug -- veya --* (gallery/--/). gallery:sync images[] + lastUpdated.",
   "version": 1,
-  "lastUpdated": "2026-05-29T19:27:02.864Z",
+  "lastUpdated": "2026-05-29T19:30:58.463Z",
   "projects": [
     {
       "category": "3D Archive",
@@ -157,7 +157,7 @@
       "hidden": false,
       "images": [
         "gallery/12/00.jpg",
-        "gallery/12/1.mp4"
+        "https://media.githubusercontent.com/media/yesimcerenunal/yesimcerenunal.github.io/main/public/gallery/12/1.mp4"
       ]
     },
     {

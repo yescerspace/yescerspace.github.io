@@ -32,6 +32,15 @@ export function isVideoUrl(url: string): boolean {
 export function detailVideoPosterUrl(videoUrl: string): string | null {
   const p = pathOnly(videoUrl);
   if (!isVideoUrl(p)) return null;
+  if (/^https?:\/\//i.test(p)) {
+    const m = p.match(/\/gallery\/(\d+)\/(\d+)\.(mp4|webm)$/i);
+    if (m) {
+      return withGalleryAssetCacheBust(
+        publicAsset(`gallery/${m[1]}/${m[2]}-.jpg`),
+      );
+    }
+    return null;
+  }
   const posterPath = p.replace(/\.(mp4|webm)$/i, "-.jpg");
   if (posterPath === p) return null;
   return withGalleryAssetCacheBust(posterPath);
