@@ -2893,7 +2893,7 @@ function GalleryScene({
       byIndex.set(idxB, slotA);
     };
     swapProjects("work/2", "work/12");
-    swapProjects("work/7", "work/8");
+    swapProjects("work/5", "work/8");
     return byIndex;
   }, [images, visibleIndices]);
 
