@@ -251,7 +251,7 @@ const en: TranslationMessages = {
   },
   about: {
     lead:
-      "Hi, I'm Ceren, a multidisciplinary designer working across 3D, motion, and interaction. I'm curious by nature, I enjoy learning, and I try to constantly improve everything rather than leaving things as they are.",
+      "Hi, I'm Ceren, a multidisciplinary artist and an interactive installations developer. I'm curious by nature, I enjoy learning, and I try to constantly improve everything rather than leaving things as they are.",
     p2:
       "It all started with a bachelor's degree in graphic design. Designs were supposed to stay static, but that didn't last long. I'm drawn to motion and interaction, so over time my work evolved into responsive, immersive experiences that pull people in.",
     p3:
@@ -343,7 +343,7 @@ const de: TranslationMessages = {
   },
   about: {
     lead:
-      "Hallo, ich bin Ceren, eine multidisziplinäre Designerin mit Schwerpunkt auf 3D, Motion und Interaktion. Ich bin von Natur aus neugierig, lerne gerne und versuche ständig, Dinge weiterzuentwickeln, anstatt sie so zu lassen, wie sie sind.",
+      "Hallo, ich bin Ceren, eine multidisziplinäre Künstlerin und Entwicklerin interaktiver Installationen. Ich bin von Natur aus neugierig, lerne gerne und versuche ständig, alles weiterzuentwickeln, anstatt es so zu lassen, wie es ist.",
     p2:
       "Alles begann mit einem Bachelorabschluss in Grafikdesign. Designs sollten eigentlich statisch bleiben, aber das hielt nicht lange an. Ich fühlte mich schon immer zu Bewegung und Interaktion hingezogen, sodass sich meine Arbeit mit der Zeit zu responsiven, immersiven Erfahrungen entwickelte, die Menschen hineinziehen.",
     p3:
@@ -435,7 +435,7 @@ const tr: TranslationMessages = {
   },
   about: {
     lead:
-      "Merhaba, ben Ceren. 3D, motion ve etkileşim alanlarında çalışan multidisipliner bir tasarımcıyım. Meraklıyım, öğrenmeyi seviyorum ve bir şeyleri olduğu gibi bırakmak yerine sürekli geliştirmeye çalışıyorum.",
+      "Merhaba, ben Ceren, multidisipliner artist ve interaktif enstalasyonlar geliştiren bir tasarımcıyım. Doğası gereği meraklıyım, öğrenmeyi seviyorum ve her şeyi olduğu gibi bırakmak yerine sürekli geliştirmeye çalışıyorum.",
     p2:
       "Her şey grafik tasarım lisansıyla başladı. Tasarımların sabit kalması gerekiyordu ama bu çok uzun sürmedi. Hareket ve etkileşime her zaman ilgim vardı, bu yüzden zamanla işlerim insanı içine çeken immersif deneyimlere dönüştü.",
     p3:

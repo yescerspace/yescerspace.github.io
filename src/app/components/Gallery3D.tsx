@@ -73,6 +73,7 @@ import {
 import { GalleryMouseParticles } from "./GalleryMouseParticles";
 import { GalleryHandOrbitBridge } from "./GalleryHandOrbitBridge";
 import { GalleryHandZoomBridge } from "./GalleryHandZoomBridge";
+import { GalleryOrbitWheelSmooth } from "./GalleryOrbitWheelSmooth";
 import { HandControlOverlay } from "./HandControlOverlay";
 import { GalleryHandModalEffect } from "./GalleryHandModalEffect";
 import { useGalleryHandControl } from "./galleryHandControl";
@@ -2980,6 +2981,13 @@ function GalleryScene({
         maxPolarAngle={maxPolarRad}
         target={[0, ORBIT_TARGET_Y, 0]}
         onStart={onSoftGalleryHint}
+      />
+      <GalleryOrbitWheelSmooth
+        orbitControlsRef={orbitControlsRef}
+        enabled={!modalOpen && !handBlocksMouse}
+        minDistance={minZoomDistance}
+        maxDistance={maxZoomDistance}
+        zoomSpeed={0.72}
       />
       <GalleryHandOrbitBridge
         orbitControlsRef={orbitControlsRef}

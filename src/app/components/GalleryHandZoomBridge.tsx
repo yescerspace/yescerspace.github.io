@@ -20,16 +20,7 @@ type GalleryHandZoomBridgeProps = {
   defaultPolarRef: MutableRefObject<number | null>;
 };
 
-function setOrbitDistance(
-  controls: StdOrbitControls,
-  distance: number,
-): void {
-  const offset = new THREE.Vector3()
-    .subVectors(controls.object.position, controls.target)
-    .normalize()
-    .multiplyScalar(distance);
-  controls.object.position.copy(controls.target).add(offset);
-}
+import { setOrbitDistance } from "./GalleryOrbitWheelSmooth";
 
 /**
  * 🙏 → max zoom-out + azimuth 0 (merkez)
