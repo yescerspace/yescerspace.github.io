@@ -11,6 +11,7 @@ import {
 export const GALLERY_CATEGORIES = [
   "Interactive / VR",
   "Motion",
+  "Audiovisual Graphic Interaction",
   "3D Archive",
   "2D Archive",
   "New",

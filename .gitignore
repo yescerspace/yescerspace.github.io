@@ -2,3 +2,9 @@ node_modules
 
 # Legacy Vite output (build writes to repo root; use /dist only if present)
 /dist
+
+# Tam çözünürlük galeri kaynakları (web sürümü 1.mp4 olarak commit edilir)
+gallery/**/*-source.mp4
+public/gallery/**/*-source.mp4
+gallery/**/*.web.tmp.mp4
+gallery/**/*.web.mp4

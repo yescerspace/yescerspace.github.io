@@ -50,6 +50,16 @@ function isVideoPosterCompanionFilename(name) {
   return /^\d+-\.(jpe?g|png|webp)$/i.test(String(name));
 }
 
+/** Kaynak / ara encode — slayt değil. */
+function isGalleryAuxMediaFilename(name) {
+  const n = String(name);
+  return (
+    n.endsWith("-source.mp4") ||
+    n.endsWith(".web.tmp.mp4") ||
+    n.endsWith(".web.mp4")
+  );
+}
+
 function hashFile(p) {
   const h = crypto.createHash("md5");
   h.update(fs.readFileSync(p));
@@ -130,7 +140,9 @@ for (const proj of manifest.projects) {
 
   const finalList = naturalSort(
     [...new Set([...listFiles(srcDir), ...listFiles(dstDir)])],
-  ).filter((f) => !isVideoPosterCompanionFilename(f));
+  ).filter(
+    (f) => !isVideoPosterCompanionFilename(f) && !isGalleryAuxMediaFilename(f),
+  );
   const prefix = `${rel.replace(/\\/g, "/")}/`;
   proj.images = finalList.map((file) => `${prefix}${file}`.replace(/\\/g, "/"));
 }

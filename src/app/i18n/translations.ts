@@ -192,6 +192,7 @@ const portfolioTr = normalizePortfolioContentJson(portfolioContentTr);
 const categoryEn: Record<GalleryCategory, string> = {
   "Interactive / VR": "Interactive / VR",
   Motion: "Motion",
+  "Audiovisual Graphic Interaction": "Audiovisual Graphic Interaction",
   "3D Archive": "3D Archive",
   "2D Archive": "2D Archive",
   New: "New",
@@ -320,6 +321,7 @@ const de: TranslationMessages = {
     all: "Alle",
     "Interactive / VR": "Interaktiv / VR",
     Motion: "BEWEGTBILD",
+    "Audiovisual Graphic Interaction": "Audiovisual grafische Interaktion",
     "3D Archive": "3D-Archiv",
     "2D Archive": "2D-Archiv",
     New: "Neu",
@@ -411,6 +413,7 @@ const tr: TranslationMessages = {
     all: "Tümü",
     "Interactive / VR": "Etkileşimli / VR",
     Motion: "Hareket",
+    "Audiovisual Graphic Interaction": "Audiovisual grafik etkileşim",
     "3D Archive": "3D arşiv",
     "2D Archive": "2D arşiv",
     New: "Yeni",
