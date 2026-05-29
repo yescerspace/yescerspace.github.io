@@ -24,12 +24,21 @@ export function CameraControlButton() {
           setEnabled(!enabled);
         }}
         aria-pressed={enabled}
+        aria-label={
+          enabled ? messages.layout.cameraControlOn : messages.layout.cameraControl
+        }
+        title={
+          enabled ? messages.layout.cameraControlOn : messages.layout.cameraControl
+        }
         className={cn(
-          "text-left text-[10px] font-medium tracking-[0.18em] text-muted-foreground transition-colors hover:text-foreground sm:text-[11px]",
-          enabled && "text-foreground",
+          "inline-flex min-h-[1.25rem] min-w-[1.25rem] items-center justify-center rounded-full text-left leading-none transition-opacity hover:opacity-70",
+          "text-[#3a3d48] opacity-45",
+          enabled && "opacity-80 text-[#5c606c]",
         )}
       >
-        {enabled ? messages.layout.cameraControlOn : messages.layout.cameraControl}
+        <span className="select-none text-[11px] font-normal sm:text-[12px]" aria-hidden>
+          .
+        </span>
       </button>
     </div>
   );
