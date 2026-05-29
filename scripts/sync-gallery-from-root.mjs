@@ -102,6 +102,7 @@ for (const proj of manifest.projects) {
   const names = new Set([...listFiles(srcDir), ...listFiles(dstDir)]);
 
   for (const f of names) {
+    if (isGalleryAuxMediaFilename(f)) continue;
     const rPath = path.join(srcDir, f);
     const pPath = path.join(dstDir, f);
     const rOk = fs.existsSync(rPath);
