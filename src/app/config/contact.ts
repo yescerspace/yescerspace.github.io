@@ -5,7 +5,7 @@
  */
 export const CONTACT_EMAIL =
   (import.meta.env.VITE_CONTACT_EMAIL as string | undefined)?.trim() ||
-  "yesimcerenunal@gmail.com";
+  "yesimcerenn@gmail.com";
 
 /** Full URL, e.g. https://formspree.io/f/abcdefgh, create at https://formspree.io */
 export const FORMSPREE_ENDPOINT = (

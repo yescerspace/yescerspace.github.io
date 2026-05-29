@@ -200,8 +200,8 @@ const categoryEn: Record<GalleryCategory, string> = {
 
 const en: TranslationMessages = {
   layout: {
-    documentTitle: "YESIM CEREN ÜNAL Portfolio",
-    brandName: "YESIM CEREN ÜNAL",
+    documentTitle: "CERRYHUB Portfolio",
+    brandName: "CERRYHUB",
     cameraControl: "switch to camera control",
     cameraControlOn: "switch to camera control",
     handGestureAwaitPalm:
@@ -287,8 +287,8 @@ const en: TranslationMessages = {
 
 const de: TranslationMessages = {
   layout: {
-    documentTitle: "YESIM CEREN ÜNAL Portfolio",
-    brandName: "YESIM CEREN ÜNAL",
+    documentTitle: "CERRYHUB Portfolio",
+    brandName: "CERRYHUB",
     cameraControl: "switch to camera control",
     cameraControlOn: "switch to camera control",
     handGestureAwaitPalm:
@@ -379,8 +379,8 @@ const de: TranslationMessages = {
 
 const tr: TranslationMessages = {
   layout: {
-    documentTitle: "YESIM CEREN ÜNAL Portfolio",
-    brandName: "YESIM CEREN ÜNAL",
+    documentTitle: "CERRYHUB Portfolio",
+    brandName: "CERRYHUB",
     cameraControl: "switch to camera control",
     cameraControlOn: "switch to camera control",
     handGestureAwaitPalm:
