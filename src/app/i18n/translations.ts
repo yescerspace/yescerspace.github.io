@@ -71,6 +71,14 @@ export type TranslationMessages = {
   layout: {
     documentTitle: string;
     brandName: string;
+    /** Opt-in gallery hand orbit — shown under the brand name. */
+    cameraControl: string;
+    cameraControlOn: string;
+    handGestureAwaitPalm: string;
+    handGestureArmedHint: string;
+    handModeFree: string;
+    handModeSteer: string;
+    handModeDetail: string;
     gestureControlOff: string;
   };
   /** Accessibility labels (not visible copy). */
@@ -193,6 +201,15 @@ const en: TranslationMessages = {
   layout: {
     documentTitle: "YESIM CEREN ÜNAL Portfolio",
     brandName: "YESIM CEREN ÜNAL",
+    cameraControl: "switch to camera control",
+    cameraControlOn: "switch to camera control",
+    handGestureAwaitPalm:
+      "Both hands open (5 fingers), palms toward the camera.",
+    handGestureArmedHint:
+      "Prayer hands: zoom out · Hands up (surrender): reset · Steer: spread/close + right up/down · Project: right scroll, left fist close",
+    handModeFree: "waiting",
+    handModeSteer: "steering",
+    handModeDetail: "project",
     gestureControlOff: "Turn off gesture control",
   },
   aria: {
@@ -271,6 +288,15 @@ const de: TranslationMessages = {
   layout: {
     documentTitle: "YESIM CEREN ÜNAL Portfolio",
     brandName: "YESIM CEREN ÜNAL",
+    cameraControl: "switch to camera control",
+    cameraControlOn: "switch to camera control",
+    handGestureAwaitPalm:
+      "Beide Hände offen (5 Finger), Handflächen zur Kamera.",
+    handGestureArmedHint:
+      "Gebetshände: rauszoomen · Hände hoch: zurücksetzen · Steuern: näher/weiter + rechts · Projekt: rechts scrollen, Faust schließen",
+    handModeFree: "warten",
+    handModeSteer: "steuern",
+    handModeDetail: "projekt",
     gestureControlOff: "Gestensteuerung ausschalten",
   },
   aria: {
@@ -353,6 +379,15 @@ const tr: TranslationMessages = {
   layout: {
     documentTitle: "YESIM CEREN ÜNAL Portfolio",
     brandName: "YESIM CEREN ÜNAL",
+    cameraControl: "switch to camera control",
+    cameraControlOn: "switch to camera control",
+    handGestureAwaitPalm:
+      "İki el açık (5 parmak), avuçlar kameraya dönük.",
+    handGestureArmedHint:
+      "Dua elleri: uzaklaş · Eller yukarı (teslim): sıfırla · Kontrol: yakın/açık + sağ yukarı/aşağı · Proje: sağ kaydır, sol yumruk kapat",
+    handModeFree: "bekleme",
+    handModeSteer: "kontrol",
+    handModeDetail: "proje",
     gestureControlOff: "Jest kontrolünü kapat",
   },
   aria: {

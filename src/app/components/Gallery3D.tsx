@@ -71,6 +71,11 @@ import {
   SUN_RAYS_PLANE_SIDE_MULT,
 } from "./gallerySunRaysMaterial";
 import { GalleryMouseParticles } from "./GalleryMouseParticles";
+import { GalleryHandOrbitBridge } from "./GalleryHandOrbitBridge";
+import { GalleryHandZoomBridge } from "./GalleryHandZoomBridge";
+import { HandControlOverlay } from "./HandControlOverlay";
+import { GalleryHandModalEffect } from "./GalleryHandModalEffect";
+import { useGalleryHandControl } from "./galleryHandControl";
 import {
   DEFAULT_GALLERY_PARALLAX,
   GalleryParallaxContext,
@@ -516,11 +521,14 @@ const CLOUD_HUB_VOID_MIN_XZ_FRAC = 0.44;
 /**
  * “All”: ortadaki görünmez çekirdeğe daha geniş boşluk (yörünge halkası daha dışta).
  */
-const CLOUD_HUB_VOID_MIN_XZ_FRAC_ALL = 0.6;
+const CLOUD_HUB_VOID_MIN_XZ_FRAC_ALL = 0.68;
 /**
  * “All”da öğeleri merkeze göre aynı oranda büyüt — birbirlerinden uzaklaşır; açılar / hash’ler aynı kalır.
  */
-const ALL_CATEGORY_PAIRWISE_SPREAD = 1.42;
+const ALL_CATEGORY_PAIRWISE_SPREAD = 1.48;
+/** Çekirdeğe yakın gezegenleri dışa iter; dış kabuk (≥ bu oran) sabit kalır. */
+const CLOUD_INNER_SPREAD_OUTER_ANCHOR = 0.9;
+const CLOUD_INNER_SPREAD_MAX_MUL = 1.32;
 
 /**
  * Front/back faces match hero artwork aspect: 1080×1080 (square).
@@ -658,6 +666,26 @@ function pushCloudOntoHubRing(
   return [x, yW, z];
 }
 
+/** İç kabuktakileri çekirdekten dışa aç — seçim için aralık; dıştakiler sabit. */
+function spreadInnerCloudFromCore(
+  x: number,
+  yW: number,
+  z: number,
+  shellR: number,
+): [number, number, number] {
+  const rh = Math.hypot(x, z);
+  if (rh < 1e-6 || shellR < 1e-6) return [x, yW, z];
+  const r01 = rh / shellR;
+  if (r01 >= CLOUD_INNER_SPREAD_OUTER_ANCHOR) return [x, yW, z];
+  const t = THREE.MathUtils.clamp(
+    (CLOUD_INNER_SPREAD_OUTER_ANCHOR - r01) / CLOUD_INNER_SPREAD_OUTER_ANCHOR,
+    0,
+    1,
+  );
+  const mul = THREE.MathUtils.lerp(1, CLOUD_INNER_SPREAD_MAX_MUL, t * t);
+  return [x * mul, yW, z * mul];
+}
+
 type OrbitDeformState = { r: number; az: number; py: number };
 
 /**
@@ -746,7 +774,8 @@ function allCloudBasePosition(
       x1 *= ALL_CATEGORY_PAIRWISE_SPREAD;
       z1 *= ALL_CATEGORY_PAIRWISE_SPREAD;
     }
-    return pushCloudOntoHubRing(0, x1, 0, z1, R, hubFrac);
+    const [px, py, pz] = pushCloudOntoHubRing(0, x1, 0, z1, R, hubFrac);
+    return spreadInnerCloudFromCore(px, py, pz, R);
   }
   const golden = Math.PI * (3 - Math.sqrt(5));
   const i = slot + 0.5;
@@ -802,7 +831,8 @@ function allCloudBasePosition(
   const hubFrac = allCategoryLayout
     ? CLOUD_HUB_VOID_MIN_XZ_FRAC_ALL
     : CLOUD_HUB_VOID_MIN_XZ_FRAC;
-  return pushCloudOntoHubRing(slot, x, yW, z, R, hubFrac);
+  const [px, py, pz] = pushCloudOntoHubRing(slot, x, yW, z, R, hubFrac);
+  return spreadInnerCloudFromCore(px, py, pz, R);
 }
 
 /** Circumference = n × spacing → radius = n×spacing / (2π); never below minRadius */
@@ -2670,6 +2700,7 @@ uniform vec3 uCoverGlow;`,
           satelliteFloat ? (circleMaterial as THREE.MeshBasicMaterial) : boxMaterials!
         }
         frustumCulled={false}
+        userData={{ galleryProjectKey: image.projectKey }}
         onPointerOver={(e: ThreeEvent<PointerEvent>) => {
           e.stopPropagation();
           if (modalOpen) return;
@@ -2828,10 +2859,20 @@ function GalleryScene({
   onPick,
   onSoftGalleryHint,
 }: GallerySceneProps) {
+  const handControl = useGalleryHandControl();
+  const handMode = handControl?.activeMode ?? "free";
+  const handBlocksMouse = Boolean(
+    handControl?.enabled && !modalOpen && handMode === "steer",
+  );
+  const handStopsAutoRotate = Boolean(
+    handControl?.enabled && !modalOpen && handMode !== "free",
+  );
   const visibleCount = visibleIndices.length;
   const satelliteFloat = true;
   const autoRotateSpeed =
     visibleCount >= 2 ? AUTO_ROTATE_SPEED_MANY : AUTO_ROTATE_SPEED;
+  const minPolarRad = THREE.MathUtils.degToRad(ORBIT_POLAR_MIN_DEG);
+  const maxPolarRad = THREE.MathUtils.degToRad(ORBIT_POLAR_MAX_DEG);
   const swappedSlotsByImageIndex = useMemo(() => {
     const byIndex = new Map<number, number>();
     const slotByProjectKey = new Map<string, number>();
@@ -2870,6 +2911,16 @@ function GalleryScene({
     () => orbitZoomLimits(ringRadius, aspect),
     [ringRadius, aspect],
   );
+  const defaultZoomDistance = useMemo(
+    () =>
+      THREE.MathUtils.clamp(
+        baseOrbitCameraDistance(ringRadius, aspect, orbitDefaultDistanceT),
+        minZoomDistance,
+        maxZoomDistance,
+      ),
+    [ringRadius, aspect, orbitDefaultDistanceT, minZoomDistance, maxZoomDistance],
+  );
+  const defaultPolarRef = useRef<number | null>(null);
   /** Açılışta 0 olunca ilk paint’te ayrım blend’i 0 kalıyordu; ~varsayılan orbit’e yakın. */
   const zoomFxRef = useRef({ zoomIn: 0.52, camAzimuth: 0 });
   const orbitPhysicsApiRef = useRef<OrbitDragPhysicsApi>({
@@ -2915,19 +2966,34 @@ function GalleryScene({
         makeDefault
         enabled={!modalOpen}
         enablePan={false}
-        enableZoom={!modalOpen}
+        enableZoom={!modalOpen && !handBlocksMouse}
+        enableRotate={!modalOpen && !handBlocksMouse}
         zoomSpeed={0.72}
         rotateSpeed={1.05}
         enableDamping
         dampingFactor={0.052}
         minDistance={minZoomDistance}
         maxDistance={maxZoomDistance}
-        autoRotate={!modalOpen && hoveredIndex === null}
+        autoRotate={!modalOpen && hoveredIndex === null && !handStopsAutoRotate}
         autoRotateSpeed={autoRotateSpeed}
-        minPolarAngle={THREE.MathUtils.degToRad(ORBIT_POLAR_MIN_DEG)}
-        maxPolarAngle={THREE.MathUtils.degToRad(ORBIT_POLAR_MAX_DEG)}
+        minPolarAngle={minPolarRad}
+        maxPolarAngle={maxPolarRad}
         target={[0, ORBIT_TARGET_Y, 0]}
         onStart={onSoftGalleryHint}
+      />
+      <GalleryHandOrbitBridge
+        orbitControlsRef={orbitControlsRef}
+        modalOpen={modalOpen}
+        minPolarAngle={minPolarRad}
+        maxPolarAngle={maxPolarRad}
+      />
+      <GalleryHandZoomBridge
+        orbitControlsRef={orbitControlsRef}
+        modalOpen={modalOpen}
+        minDistance={minZoomDistance}
+        maxDistance={maxZoomDistance}
+        defaultDistance={defaultZoomDistance}
+        defaultPolarRef={defaultPolarRef}
       />
       <RingCameraSync
         ringRadius={ringRadius}
@@ -3536,6 +3602,12 @@ export function Gallery3D({
 
   return (
     <div className="flex min-h-0 min-w-0 w-full flex-1 flex-col">
+      <HandControlOverlay modalOpen={detailModalOpen} />
+      <GalleryHandModalEffect
+        modalOpen={detailModalOpen}
+        scrollRef={detailModalScrollRef}
+        onCloseModal={closeModal}
+      />
       <div className="flex min-h-0 w-full flex-1 flex-col px-0 pb-0 pt-0">
         <div
           ref={galleryShellRef}
