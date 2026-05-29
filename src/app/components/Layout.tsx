@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Outlet, useLocation } from "react-router";
+import { Link, Outlet, useLocation } from "react-router";
 import { LanguageProvider, useLanguage } from "../context/LanguageContext";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { FooterNav } from "./FooterNav";
@@ -35,12 +35,13 @@ function LayoutShell() {
             {/*
               `lang="en"`: root `<html>` stays `lang="en"` for typography; Latin brand stays stable.
             */}
-            <p
+            <Link
+              to="/"
               lang="en"
-              className="text-[calc(0.75rem+1pt)] font-semibold tracking-[0.22em] text-foreground sm:text-[calc(0.875rem+1pt)]"
+              className="inline-block text-[calc(0.75rem+1pt)] font-semibold tracking-[0.22em] text-foreground transition-opacity hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground sm:text-[calc(0.875rem+1pt)]"
             >
               {messages.layout.brandName}
-            </p>
+            </Link>
             {isGallery ? <CameraControlButton /> : null}
           </div>
           <div className="shrink-0">
