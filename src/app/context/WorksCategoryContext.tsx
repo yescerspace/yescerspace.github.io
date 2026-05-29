@@ -14,7 +14,7 @@ export const GALLERY_CATEGORIES = [
   "AUDIOVISUAL INTERACTIONS",
   "3D Archive",
   "2D Archive",
-  "New",
+  "3D PARTICLE SIMULATION",
 ] as const;
 
 export type GalleryCategory = (typeof GALLERY_CATEGORIES)[number];

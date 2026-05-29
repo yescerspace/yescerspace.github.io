@@ -1,7 +1,7 @@
 {
   "sourceOfTruth": "Flat layout: disk gallery/<n>/ for numbered slots; manifest projectKey work/<n>. hidden: true = galeride yok; false veya yok = görünür (work/2 şimdilik true). Taslak: slug -- veya --* (gallery/--/). gallery:sync images[] + lastUpdated.",
   "version": 1,
-  "lastUpdated": "2026-05-29T14:50:53.985Z",
+  "lastUpdated": "2026-05-29T14:55:09.646Z",
   "projects": [
     {
       "category": "3D Archive",
@@ -137,7 +137,7 @@
       ]
     },
     {
-      "category": "New",
+      "category": "3D PARTICLE SIMULATION",
       "categoryFolder": "work",
       "slug": "11",
       "hidden": false,
@@ -161,7 +161,7 @@
       ]
     },
     {
-      "category": "New",
+      "category": "3D PARTICLE SIMULATION",
       "categoryFolder": "work",
       "slug": "13",
       "hidden": false,
@@ -183,7 +183,7 @@
       ]
     },
     {
-      "category": "New",
+      "category": "3D PARTICLE SIMULATION",
       "categoryFolder": "work",
       "slug": "15",
       "hidden": false,
