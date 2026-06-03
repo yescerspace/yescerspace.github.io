@@ -90,9 +90,9 @@
     "tools": ""
   },
   "work/16": {
-    "title": "Yeni proje 6",
-    "description": "Yer tutucu — başlık, açıklama ve medyayı gallery/16/ içinde güncelleyin.",
-    "year": "",
-    "tools": ""
+    "title": "Touch Video Filters",
+    "description": "Touch Video Filters, TouchDesigner’da geliştirilmiş gerçek zamanlı bir görüntü ve video işleme sistemidir.\n\nProje; birden fazla görsel efektin uygulanmasını, birleştirilmesini ve katmanlanmasını mümkün kılar; deneme ve içerik üretimi için esnek bir iş akışı sunar. Modüler tasarım ve prosedürel işleme sayesinde çeşitli görsel sonuçlar gerçek zamanlı olarak hızlıca keşfedilebilir.\n\nBu çalışma; etkileşimli efektlerin ve üretken tekniklerin geleneksel medya işlemeyi nasıl daha dinamik bir yaratıcı pratiğe dönüştürebileceğini inceler.",
+    "year": "2026",
+    "tools": "TouchDesigner, Premiere Pro"
   }
 }
