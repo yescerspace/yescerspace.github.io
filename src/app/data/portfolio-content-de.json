@@ -90,7 +90,7 @@
     "tools": ""
   },
   "work/16": {
-    "title": "Touch Video Filters",
+    "title": "Generative Visual Filters",
     "description": "Diese generativen Motion-Tracking-Systeme wurden in Touch Designer entwickelt, um Bild und Video in Echtzeit zu verarbeiten. Das Projekt erforscht, wie visuelle Effekte geschichtet, kombiniert und manipuliert werden können, um sich entwickelnde visuelle Kompositionen zu erzeugen. Mit modularen Strukturen, Grafik und prozeduralen Techniken fördert es Experimente und ermöglicht die schnelle Entstehung vielfältiger visueller Ergebnisse.",
     "year": "2026",
     "tools": "TouchDesigner, Premiere Pro"
