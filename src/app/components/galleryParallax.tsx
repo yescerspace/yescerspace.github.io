@@ -10,7 +10,7 @@ export type GalleryParallaxState = {
 };
 
 export const DEFAULT_GALLERY_PARALLAX: GalleryParallaxState = {
-  azimuth: 0,
+  azimuth: (-30 * Math.PI) / 180,
   polar: 1.05,
   distanceT: 0.5,
 };

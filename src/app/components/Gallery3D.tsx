@@ -929,6 +929,11 @@ const ORBIT_MAX_DISTANCE_RATIO_MOBILE = 2.35;
  * Higher = calmer opening frame; scroll still reaches `min`.
  */
 const DEFAULT_ORBIT_DISTANCE_T = 0.72;
+/** Açılış kadrajı — OrbitControls yatay (azimuth) açısı, derece. */
+const DEFAULT_ORBIT_AZIMUTH_DEG = -30;
+const DEFAULT_ORBIT_AZIMUTH_RAD = THREE.MathUtils.degToRad(
+  DEFAULT_ORBIT_AZIMUTH_DEG,
+);
 
 /**
  * Orbit pivot + ring anchor (world Y). Lifts the layout so framing is balanced
@@ -1133,20 +1138,30 @@ function baseOrbitCameraDistance(
 function setCameraPositionForOrbitDistance(
   camera: THREE.Camera,
   distance: number,
+  azimuthRad: number = DEFAULT_ORBIT_AZIMUTH_RAD,
 ): void {
   const e = cameraElevationAngle();
   const sy = Math.sin(e) * distance;
   const cz = Math.cos(e) * distance;
-  camera.position.set(0, ORBIT_TARGET_Y + sy, cz);
+  const sinAz = Math.sin(azimuthRad);
+  const cosAz = Math.cos(azimuthRad);
+  camera.position.set(cz * sinAz, ORBIT_TARGET_Y + sy, cz * cosAz);
   camera.lookAt(_orbitTarget);
   if (camera instanceof THREE.PerspectiveCamera) {
     camera.updateProjectionMatrix();
   }
 }
 
-function cameraTupleForOrbitDistance(distance: number): [number, number, number] {
+function cameraTupleForOrbitDistance(
+  distance: number,
+  azimuthRad: number = DEFAULT_ORBIT_AZIMUTH_RAD,
+): [number, number, number] {
   const e = cameraElevationAngle();
-  return [0, ORBIT_TARGET_Y + Math.sin(e) * distance, Math.cos(e) * distance];
+  const sy = Math.sin(e) * distance;
+  const cz = Math.cos(e) * distance;
+  const sinAz = Math.sin(azimuthRad);
+  const cosAz = Math.cos(azimuthRad);
+  return [cz * sinAz, ORBIT_TARGET_Y + sy, cz * cosAz];
 }
 
 function defaultViewportAspect(): number {
@@ -1157,9 +1172,11 @@ function defaultViewportAspect(): number {
 
 function RingCameraSync({
   ringRadius,
+  orbitControlsRef,
   defaultDistanceT = DEFAULT_ORBIT_DISTANCE_T,
 }: {
   ringRadius: number;
+  orbitControlsRef: MutableRefObject<StdOrbitControls | null>;
   defaultDistanceT?: number;
 }) {
   const { camera, size } = useThree();
@@ -1183,12 +1200,17 @@ function RingCameraSync({
 
   useLayoutEffect(() => {
     setCameraPositionForOrbitDistance(camera, baseD);
+    const controls = orbitControlsRef.current;
+    if (controls) {
+      controls.setAzimuthalAngle(DEFAULT_ORBIT_AZIMUTH_RAD);
+      controls.update();
+    }
     if (camera instanceof THREE.PerspectiveCamera) {
       camera.near = CAMERA_NEAR;
       camera.far = CAMERA_FAR;
       camera.updateProjectionMatrix();
     }
-  }, [ringRadius, camera, baseD]);
+  }, [ringRadius, camera, baseD, orbitControlsRef]);
 
   return null;
 }
@@ -2923,11 +2945,14 @@ function GalleryScene({
   );
   const defaultPolarRef = useRef<number | null>(null);
   /** Açılışta 0 olunca ilk paint’te ayrım blend’i 0 kalıyordu; ~varsayılan orbit’e yakın. */
-  const zoomFxRef = useRef({ zoomIn: 0.52, camAzimuth: 0 });
+  const zoomFxRef = useRef({
+    zoomIn: 0.52,
+    camAzimuth: DEFAULT_ORBIT_AZIMUTH_RAD,
+  });
   const orbitPhysicsApiRef = useRef<OrbitDragPhysicsApi>({
     omegaSmoothed: 0,
     isDragging: false,
-    camAzimuth: 0,
+    camAzimuth: DEFAULT_ORBIT_AZIMUTH_RAD,
     orbitMomentum: 0,
   });
 
@@ -3001,10 +3026,12 @@ function GalleryScene({
         minDistance={minZoomDistance}
         maxDistance={maxZoomDistance}
         defaultDistance={defaultZoomDistance}
+        defaultAzimuthRad={DEFAULT_ORBIT_AZIMUTH_RAD}
         defaultPolarRef={defaultPolarRef}
       />
       <RingCameraSync
         ringRadius={ringRadius}
+        orbitControlsRef={orbitControlsRef}
         defaultDistanceT={orbitDefaultDistanceT}
       />
       <AdaptiveFovSync
