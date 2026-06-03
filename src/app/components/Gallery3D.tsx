@@ -182,22 +182,36 @@ function tryPlayDetailVideo(v: HTMLVideoElement): void {
   );
 }
 
+function detailReadingModeActive(readingEl: HTMLElement | null): boolean {
+  if (!readingEl || typeof window === "undefined") return false;
+  const r = readingEl.getBoundingClientRect();
+  return r.top < window.innerHeight * 0.78;
+}
+
 function pickDetailVideoPlayIndex(
   detailUrls: readonly string[],
   srcFor: (u: string) => string,
   failed: Record<string, boolean>,
   itemEls: readonly (HTMLElement | null)[],
   forcedPlayIndex: number | null,
+  readingEl: HTMLElement | null = null,
 ): number {
-  if (forcedPlayIndex != null) {
-    const u = detailUrls[forcedPlayIndex];
-    if (u && !failed[u] && isVideoUrl(srcFor(u))) {
-      return forcedPlayIndex;
-    }
-  }
+  if (detailReadingModeActive(readingEl)) return -1;
 
   const viewBottom =
     typeof window !== "undefined" ? window.innerHeight : 800;
+
+  if (forcedPlayIndex != null) {
+    const u = detailUrls[forcedPlayIndex];
+    if (u && !failed[u] && isVideoUrl(srcFor(u))) {
+      const wrap = itemEls[forcedPlayIndex];
+      if (wrap) {
+        const r = wrap.getBoundingClientRect();
+        const visible = Math.min(r.bottom, viewBottom) - Math.max(r.top, 0);
+        if (visible > 32) return forcedPlayIndex;
+      }
+    }
+  }
   let bestI = -1;
   let bestVisible = 0;
 
@@ -224,6 +238,7 @@ function syncDetailVideoPlayback(
   itemEls: readonly (HTMLElement | null)[],
   videoEls: readonly (HTMLVideoElement | null)[],
   forcedPlayIndex: number | null = null,
+  readingEl: HTMLElement | null = null,
 ): void {
   const playIndex = pickDetailVideoPlayIndex(
     detailUrls,
@@ -231,6 +246,7 @@ function syncDetailVideoPlayback(
     failed,
     itemEls,
     forcedPlayIndex,
+    readingEl,
   );
 
   for (let i = 0; i < videoEls.length; i++) {
@@ -3108,12 +3124,18 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
     heroAlt,
     className,
     outerScrollRef,
+    muteWhenReadingRef,
+    playbackSyncKey,
   }: {
     urls: string[];
     heroAlt: string;
     className?: string;
     /** Modal backdrop scroll — sync video play/pause when reading info below. */
     outerScrollRef?: MutableRefObject<HTMLDivElement | null>;
+    /** When this block enters view, pause all detail videos (info section). */
+    muteWhenReadingRef?: MutableRefObject<HTMLElement | null>;
+    /** Re-bind scroll listeners when modal opens (outer ref is ready). */
+    playbackSyncKey?: string;
   },
   forwardedRef: Ref<HTMLDivElement>,
 ) {
@@ -3173,17 +3195,18 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
   );
 
   const syncPlayback = useCallback(() => {
+    const readingEl = muteWhenReadingRef?.current ?? null;
     const scrollPick = pickDetailVideoPlayIndex(
       detailUrls,
       srcFor,
       failed,
       itemRefs.current,
       null,
+      readingEl,
     );
     if (
       forcedPlayIndexRef.current != null &&
-      scrollPick >= 0 &&
-      scrollPick !== forcedPlayIndexRef.current
+      (scrollPick < 0 || scrollPick !== forcedPlayIndexRef.current)
     ) {
       forcedPlayIndexRef.current = null;
     }
@@ -3194,8 +3217,9 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
       itemRefs.current,
       videoRefs.current,
       forcedPlayIndexRef.current,
+      readingEl,
     );
-  }, [detailUrls, srcFor, failed]);
+  }, [detailUrls, srcFor, failed, muteWhenReadingRef]);
 
   const playbackRafRef = useRef(0);
   const schedulePlaybackSync = useCallback(() => {
@@ -3275,6 +3299,7 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
     detailUrls.length,
     detailUrlsKey,
     outerScrollRef,
+    playbackSyncKey,
     schedulePlaybackSync,
     syncPlayback,
   ]);
@@ -3634,6 +3659,7 @@ export function Gallery3D({
 
   const detailModalScrollRef = useRef<HTMLDivElement>(null);
   const modalDetailWheelRootRef = useRef<HTMLDivElement>(null);
+  const detailInfoRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
     if (!detailModalOpen) return;
@@ -3811,7 +3837,7 @@ export function Gallery3D({
           >
             <div
               ref={modalDetailWheelRootRef}
-              className="absolute inset-0 overflow-y-auto overscroll-y-auto scroll-smooth p-6 sm:p-10 flex items-start justify-center"
+              className="absolute inset-0 overflow-y-auto overscroll-y-auto p-6 sm:p-10 flex items-start justify-center"
                 style={{
                 background: "var(--modal-backdrop)",
                 backdropFilter: "blur(20px)",
@@ -3833,6 +3859,8 @@ export function Gallery3D({
                 <ProjectImageScroll
                   ref={detailModalScrollRef}
                   outerScrollRef={modalDetailWheelRootRef}
+                  muteWhenReadingRef={detailInfoRef}
+                  playbackSyncKey={selectedImage.projectKey}
                   key={`${selectedImage.projectKey}|${selectedImage.images.join("|")}`}
                   urls={selectedImage.images}
                   heroAlt={selectedPortfolioCopy.title}
@@ -3841,6 +3869,7 @@ export function Gallery3D({
               </div>
 
               <motion.div
+                ref={detailInfoRef}
                 initial={{ x: 24, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{
