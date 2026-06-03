@@ -186,9 +186,11 @@ const portfolioTr = normalizePortfolioContentJson(portfolioContentTr);
 const categoryEn: Record<GalleryCategory, string> = {
   "Interactive / VR": "Interactive / VR",
   Motion: "Motion",
+  "AUDIOVISUAL INTERACTIONS": "AUDIOVISUAL INTERACTIONS",
+  "GENERATIVE MOTION TRACKING": "GENERATIVE MOTION TRACKING",
   "3D Archive": "3D Archive",
   "2D Archive": "2D Archive",
-  New: "New",
+  "3D PARTICLE SIMULATION": "3D PARTICLE SIMULATION",
 };
 
 const en: TranslationMessages = {
@@ -298,9 +300,11 @@ const de: TranslationMessages = {
     all: "Alle",
     "Interactive / VR": "Interaktiv / VR",
     Motion: "BEWEGTBILD",
+    "AUDIOVISUAL INTERACTIONS": "AUDIOVISUELLE INTERAKTIONEN",
+    "GENERATIVE MOTION TRACKING": "GENERATIVES MOTION TRACKING",
     "3D Archive": "3D-Archiv",
     "2D Archive": "2D-Archiv",
-    New: "Neu",
+    "3D PARTICLE SIMULATION": "3D-PARTIKEL-SIMULATION",
   },
   gallery: {
     exploreHint: "Scrollen, ziehen… deine Kontrolle, einfach volle!",
@@ -381,9 +385,11 @@ const tr: TranslationMessages = {
     all: "Tümü",
     "Interactive / VR": "Etkileşimli / VR",
     Motion: "Hareket",
+    "AUDIOVISUAL INTERACTIONS": "Görsel-işitsel etkileşimler",
+    "GENERATIVE MOTION TRACKING": "Üretken hareket izleme",
     "3D Archive": "3D arşiv",
     "2D Archive": "2D arşiv",
-    New: "Yeni",
+    "3D PARTICLE SIMULATION": "3B parçacık simülasyonu",
   },
   gallery: {
     exploreHint: "Kaydır, sürükle.. kontrol sende!",

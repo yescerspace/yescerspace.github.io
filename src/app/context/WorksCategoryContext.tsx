@@ -12,6 +12,7 @@ export const GALLERY_CATEGORIES = [
   "Interactive / VR",
   "Motion",
   "AUDIOVISUAL INTERACTIONS",
+  "GENERATIVE MOTION TRACKING",
   "3D Archive",
   "2D Archive",
   "3D PARTICLE SIMULATION",
