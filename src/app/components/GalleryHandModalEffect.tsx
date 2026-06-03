@@ -82,6 +82,7 @@ export function GalleryHandModalEffect({
       smoothedScrollRef.current +=
         (targetScroll - smoothedScrollRef.current) * HAND_DETAIL_SCROLL_SMOOTH;
       el.scrollTop = smoothedScrollRef.current;
+      el.dispatchEvent(new Event("scroll", { bubbles: true }));
 
       raf = requestAnimationFrame(tick);
     };

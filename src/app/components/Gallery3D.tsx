@@ -153,19 +153,71 @@ const WORK2_ARTSTATION_ALBUM_URL =
 /** `false` iken ikon gösterilmez; tekrar açmak için `true` yap. */
 const WORK2_ARTSTATION_BUTTON_ENABLED = false;
 
-/** Detail modal: allow first-row video at top; others only when vertically centered in the scroller. */
-const DETAIL_FIRST_VIDEO_SCROLL_TOP_MAX = 56;
-const DETAIL_VIDEO_CENTER_BAND_FRAC = 0.22;
 /** Initial playback level (0–1) when a clip loads; audience can change it with the player controls. */
 const DETAIL_VIDEO_VOLUME = 0.2;
 
-/** Avoid audio before the first frame is decoded (`loadedmetadata` alone is not enough). */
-function videoCanShowFrame(v: HTMLVideoElement): boolean {
-  return v.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA;
+function tryPlayDetailVideo(v: HTMLVideoElement): void {
+  v.volume = DETAIL_VIDEO_VOLUME;
+  if (v.preload !== "auto") {
+    v.preload = "auto";
+  }
+  const attempt = () => {
+    v.muted = false;
+    void v.play().catch(() => {
+      v.muted = true;
+      void v.play().catch(() => {});
+    });
+  };
+  attempt();
+  if (v.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) return;
+  if (v.dataset.detailPlayPending === "1") return;
+  v.dataset.detailPlayPending = "1";
+  v.addEventListener(
+    "canplay",
+    () => {
+      delete v.dataset.detailPlayPending;
+      attempt();
+    },
+    { once: true },
+  );
+}
+
+function pickDetailVideoPlayIndex(
+  detailUrls: readonly string[],
+  srcFor: (u: string) => string,
+  failed: Record<string, boolean>,
+  itemEls: readonly (HTMLElement | null)[],
+  forcedPlayIndex: number | null,
+): number {
+  if (forcedPlayIndex != null) {
+    const u = detailUrls[forcedPlayIndex];
+    if (u && !failed[u] && isVideoUrl(srcFor(u))) {
+      return forcedPlayIndex;
+    }
+  }
+
+  const viewBottom =
+    typeof window !== "undefined" ? window.innerHeight : 800;
+  let bestI = -1;
+  let bestVisible = 0;
+
+  for (let i = 0; i < detailUrls.length; i++) {
+    const u = detailUrls[i];
+    if (!u || failed[u] || !isVideoUrl(srcFor(u))) continue;
+    const wrap = itemEls[i];
+    if (!wrap) continue;
+    const r = wrap.getBoundingClientRect();
+    const visible = Math.min(r.bottom, viewBottom) - Math.max(r.top, 0);
+    if (visible > bestVisible) {
+      bestVisible = visible;
+      bestI = i;
+    }
+  }
+
+  return bestI >= 0 && bestVisible > 32 ? bestI : -1;
 }
 
 function syncDetailVideoPlayback(
-  scrollEl: HTMLDivElement,
   detailUrls: readonly string[],
   srcFor: (u: string) => string,
   failed: Record<string, boolean>,
@@ -173,52 +225,13 @@ function syncDetailVideoPlayback(
   videoEls: readonly (HTMLVideoElement | null)[],
   forcedPlayIndex: number | null = null,
 ): void {
-  const firstUrl = detailUrls[0];
-  const firstIsVideo =
-    firstUrl != null &&
-    !failed[firstUrl] &&
-    isVideoUrl(srcFor(firstUrl));
-
-  const cRect = scrollEl.getBoundingClientRect();
-  const centerY = cRect.top + cRect.height / 2;
-  const band = Math.max(56, cRect.height * DETAIL_VIDEO_CENTER_BAND_FRAC);
-
-  let playIndex = -1;
-
-  if (forcedPlayIndex != null) {
-    const u = detailUrls[forcedPlayIndex];
-    if (u && !failed[u] && isVideoUrl(srcFor(u))) {
-      playIndex = forcedPlayIndex;
-    }
-  }
-
-  if (
-    playIndex < 0 &&
-    firstIsVideo &&
-    scrollEl.scrollTop < DETAIL_FIRST_VIDEO_SCROLL_TOP_MAX
-  ) {
-    playIndex = 0;
-  }
-  if (playIndex < 0) {
-    let bestI = -1;
-    let bestDist = Infinity;
-    for (let i = 0; i < detailUrls.length; i++) {
-      const u = detailUrls[i];
-      if (!u || failed[u] || !isVideoUrl(srcFor(u))) continue;
-      const wrap = itemEls[i];
-      if (!wrap) continue;
-      const r = wrap.getBoundingClientRect();
-      const mid = r.top + r.height / 2;
-      const dist = Math.abs(mid - centerY);
-      if (dist < bestDist) {
-        bestDist = dist;
-        bestI = i;
-      }
-    }
-    if (bestI >= 0 && bestDist <= band) {
-      playIndex = bestI;
-    }
-  }
+  const playIndex = pickDetailVideoPlayIndex(
+    detailUrls,
+    srcFor,
+    failed,
+    itemEls,
+    forcedPlayIndex,
+  );
 
   for (let i = 0; i < videoEls.length; i++) {
     const v = videoEls[i];
@@ -226,11 +239,9 @@ function syncDetailVideoPlayback(
     const u = detailUrls[i];
     if (!u || failed[u] || !isVideoUrl(srcFor(u))) continue;
     if (i === playIndex) {
-      v.muted = false;
-      if (videoCanShowFrame(v)) {
-        void v.play().catch(() => {});
-      }
+      tryPlayDetailVideo(v);
     } else {
+      delete v.dataset.detailPlayPending;
       v.pause();
       v.muted = true;
     }
@@ -3096,11 +3107,13 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
     urls,
     heroAlt,
     className,
+    outerScrollRef,
   }: {
     urls: string[];
     heroAlt: string;
-    /** Ek Tailwind (ör. modalda `lg:absolute lg:inset-0`). */
     className?: string;
+    /** Modal backdrop scroll — sync video play/pause when reading info below. */
+    outerScrollRef?: MutableRefObject<HTMLDivElement | null>;
   },
   forwardedRef: Ref<HTMLDivElement>,
 ) {
@@ -3160,10 +3173,21 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
   );
 
   const syncPlayback = useCallback(() => {
-    const root = scrollRef.current;
-    if (!root) return;
+    const scrollPick = pickDetailVideoPlayIndex(
+      detailUrls,
+      srcFor,
+      failed,
+      itemRefs.current,
+      null,
+    );
+    if (
+      forcedPlayIndexRef.current != null &&
+      scrollPick >= 0 &&
+      scrollPick !== forcedPlayIndexRef.current
+    ) {
+      forcedPlayIndexRef.current = null;
+    }
     syncDetailVideoPlayback(
-      root,
       detailUrls,
       srcFor,
       failed,
@@ -3215,19 +3239,45 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
   }, []);
 
   useEffect(() => {
-    const root = scrollRef.current;
-    if (!root || detailUrls.length === 0) return;
+    if (detailUrls.length === 0) return;
     syncPlayback();
-    root.addEventListener("scroll", schedulePlaybackSync, { passive: true });
+
+    const scrollRoots = new Set<HTMLDivElement>();
+    const inner = scrollRef.current;
+    const outer = outerScrollRef?.current;
+    if (inner) scrollRoots.add(inner);
+    if (outer) scrollRoots.add(outer);
+
+    for (const el of scrollRoots) {
+      el.addEventListener("scroll", schedulePlaybackSync, { passive: true });
+    }
     const ro = new ResizeObserver(() => schedulePlaybackSync());
-    ro.observe(root);
+    if (inner) ro.observe(inner);
     window.addEventListener("resize", schedulePlaybackSync);
+
+    const io = new IntersectionObserver(
+      () => schedulePlaybackSync(),
+      { root: null, threshold: [0, 0.15, 0.35, 0.5, 0.65, 0.85, 1] },
+    );
+    for (const el of itemRefs.current) {
+      if (el) io.observe(el);
+    }
+
     return () => {
-      root.removeEventListener("scroll", schedulePlaybackSync);
+      for (const el of scrollRoots) {
+        el.removeEventListener("scroll", schedulePlaybackSync);
+      }
       ro.disconnect();
       window.removeEventListener("resize", schedulePlaybackSync);
+      io.disconnect();
     };
-  }, [detailUrls.length, schedulePlaybackSync, syncPlayback]);
+  }, [
+    detailUrls.length,
+    detailUrlsKey,
+    outerScrollRef,
+    schedulePlaybackSync,
+    syncPlayback,
+  ]);
 
   useLayoutEffect(() => {
     if (detailUrls.length === 0) return;
@@ -3271,7 +3321,7 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
     <div
       ref={setScrollRef}
       className={cn(
-        "max-h-[min(70vh,580px)] w-full min-w-0 overflow-y-auto overscroll-y-contain bg-app-shell-bg/35 [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar]:w-0",
+        "max-h-[min(70vh,580px)] w-full min-w-0 overflow-y-auto overscroll-y-auto bg-app-shell-bg/35 [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar]:w-0",
         className,
       )}
       role="region"
@@ -3279,7 +3329,9 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
     >
       <div className="flex w-full flex-col gap-8">
         {detailUrls.map((url, i) => {
-          const src = srcFor(url);
+          const src = failed[url]
+            ? fallbackImageUrl()
+            : withGalleryAssetCacheBust(url);
           const indexLabel = galleryFilenameIndex(url);
           const showVideo = !failed[url] && isVideoUrl(src);
           const label =
@@ -3305,7 +3357,7 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
                   controls
                   controlsList="nodownload"
                   playsInline
-                  preload={isPrimaryDetailVideo ? "auto" : "metadata"}
+                  preload="auto"
                   {...(isPrimaryDetailVideo
                     ? ({ fetchPriority: "high" } as VideoHTMLAttributes<HTMLVideoElement>)
                     : ({
@@ -3327,14 +3379,10 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
                     schedulePlaybackSync();
                   }}
                   onCanPlay={schedulePlaybackSync}
-                  onPlay={() => {
-                    if (
-                      forcedPlayIndexRef.current != null &&
-                      forcedPlayIndexRef.current !== i
-                    ) {
-                      return;
+                  onPlay={(e) => {
+                    if (e.nativeEvent.isTrusted) {
+                      forcedPlayIndexRef.current = i;
                     }
-                    forcedPlayIndexRef.current = i;
                     schedulePlaybackSync();
                   }}
                   onPause={() => {
@@ -3594,19 +3642,35 @@ export function Gallery3D({
 
     const onWheel = (e: WheelEvent) => {
       const scrollEl = detailModalScrollRef.current;
-      if (!scrollEl) return;
-      if (scrollEl.scrollHeight <= scrollEl.clientHeight + 1) return;
+      if (!scrollEl || e.deltaY === 0) return;
 
       const delta = e.deltaY;
-      const { scrollTop, scrollHeight, clientHeight } = scrollEl;
-      const atTop = scrollTop <= 0.5;
-      const atBottom = scrollTop + clientHeight >= scrollHeight - 0.5;
+      const innerOverflows =
+        scrollEl.scrollHeight > scrollEl.clientHeight + 1;
+      const innerAtTop = scrollEl.scrollTop <= 0.5;
+      const innerAtBottom =
+        scrollEl.scrollTop + scrollEl.clientHeight >=
+        scrollEl.scrollHeight - 0.5;
 
-      if (delta < 0 && atTop) return;
-      if (delta > 0 && atBottom) return;
+      if (delta > 0) {
+        if (innerOverflows && !innerAtBottom) {
+          e.preventDefault();
+          scrollEl.scrollTop += delta;
+          scrollEl.dispatchEvent(new Event("scroll", { bubbles: true }));
+        }
+        return;
+      }
 
-      e.preventDefault();
-      scrollEl.scrollTop += delta;
+      if (delta < 0) {
+        if (root.scrollTop > 0.5) {
+          return;
+        }
+        if (innerOverflows && !innerAtTop) {
+          e.preventDefault();
+          scrollEl.scrollTop += delta;
+          scrollEl.dispatchEvent(new Event("scroll", { bubbles: true }));
+        }
+      }
     };
 
     root.addEventListener("wheel", onWheel, { passive: false, capture: true });
@@ -3747,7 +3811,7 @@ export function Gallery3D({
           >
             <div
               ref={modalDetailWheelRootRef}
-              className="absolute inset-0 overflow-y-auto overscroll-y-contain p-6 sm:p-10 flex items-start justify-center"
+              className="absolute inset-0 overflow-y-auto overscroll-y-auto scroll-smooth p-6 sm:p-10 flex items-start justify-center"
                 style={{
                 background: "var(--modal-backdrop)",
                 backdropFilter: "blur(20px)",
@@ -3762,16 +3826,17 @@ export function Gallery3D({
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.94, opacity: 0, y: 20 }}
               transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-              className="relative my-auto flex w-full max-w-6xl min-h-0 flex-col gap-10 lg:grid lg:grid-cols-[minmax(0,560px)_minmax(0,28rem)] lg:items-stretch lg:gap-x-14"
+              className="relative flex w-full max-w-3xl min-h-0 flex-col gap-10 pb-4"
               onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
             >
-              <div className="min-h-0 w-full min-w-0 shrink-0 bg-app-shell-bg lg:col-start-1 lg:row-start-1 lg:relative lg:max-w-none lg:self-stretch lg:min-h-[min(70vh,580px)]">
+              <div className="min-h-0 w-full min-w-0 shrink-0 bg-app-shell-bg">
                 <ProjectImageScroll
                   ref={detailModalScrollRef}
+                  outerScrollRef={modalDetailWheelRootRef}
                   key={`${selectedImage.projectKey}|${selectedImage.images.join("|")}`}
                   urls={selectedImage.images}
                   heroAlt={selectedPortfolioCopy.title}
-                  className="min-h-[min(70vh,580px)] max-h-[min(70vh,580px)] lg:absolute lg:inset-0 lg:h-full lg:min-h-0 lg:max-h-none"
+                  className="min-h-[min(70vh,580px)] max-h-[min(70vh,580px)]"
                 />
               </div>
 
@@ -3783,7 +3848,7 @@ export function Gallery3D({
                   duration: 0.4,
                   ease: [0.25, 0.46, 0.45, 0.94],
                 }}
-                className="flex min-h-0 w-full flex-col gap-10 justify-start lg:col-start-2 lg:row-start-1 lg:max-w-none"
+                className="flex min-h-0 w-full flex-col gap-10 justify-start"
               >
                 <div>
                   <p className="mb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
@@ -3896,7 +3961,7 @@ export function Gallery3D({
               <button
                 type="button"
                 onClick={closeModal}
-                className="absolute -right-1 -top-1 rounded-full bg-card p-2.5 text-foreground transition-transform hover:scale-105 lg:right-0 lg:top-0"
+                className="absolute -right-1 -top-1 rounded-full bg-card p-2.5 text-foreground transition-transform hover:scale-105"
                 style={{
                   boxShadow:
                     "0 4px 24px color-mix(in oklch, oklch(0.05 0.02 268) 55%, transparent)",
