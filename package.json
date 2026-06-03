@@ -10,7 +10,9 @@
     "dev": "vite",
     "typecheck": "tsc --noEmit",
     "gallery:placeholders": "node scripts/seed-gallery-placeholders.mjs",
-    "gallery:sync": "node scripts/sync-gallery-from-root.mjs"
+    "gallery:sync": "node scripts/sync-gallery-from-root.mjs",
+    "deploy": "node scripts/deploy-github-pages.mjs",
+    "deploy:push": "node scripts/deploy-github-pages.mjs --push"
   },
   "dependencies": {
     "@emotion/react": "11.14.0",
