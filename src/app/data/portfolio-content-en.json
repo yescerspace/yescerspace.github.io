@@ -107,7 +107,7 @@
   "work/16": {
     "category": "GENERATIVE MOTION TRACKING",
     "title": "Touch Video Filters",
-    "description": "Touch Video Filters is a real-time image and video processing system developed in TouchDesigner.\n\nThe project enables the application, combination, and layering of multiple visual effects, creating a flexible workflow for experimentation and content generation. Through modular design and procedural processing, it allows for the rapid exploration of diverse visual outcomes in real time.\n\nThis study investigates how interactive effects and generative techniques can transform conventional media processing into a more dynamic creative practice.",
+    "description": "Touch Video Filters is a real-time image and video processing system developed in TouchDesigner. The study explores the application, combination, and layering of visual effects, creating a flexible outcomes. Through modular design and procedural processing, it allows for the rapid production of diverse assets.",
     "year": "2026",
     "tools": "TouchDesigner, Premiere Pro"
   }

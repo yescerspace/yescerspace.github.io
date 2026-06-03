@@ -91,7 +91,7 @@
   },
   "work/16": {
     "title": "Touch Video Filters",
-    "description": "Touch Video Filters ist ein Echtzeit-Bild- und Videoverarbeitungssystem, entwickelt in TouchDesigner.\n\nDas Projekt ermöglicht die Anwendung, Kombination und Schichtung mehrerer visueller Effekte und schafft einen flexiblen Workflow für Experimente und Content-Erstellung. Durch modulares Design und prozedurale Verarbeitung lassen sich in Echtzeit vielfältige visuelle Ergebnisse schnell erkunden.\n\nDiese Studie untersucht, wie interaktive Effekte und generative Techniken konventionelle Medienverarbeitung in eine dynamischere kreative Praxis verwandeln können.",
+    "description": "Touch Video Filters ist ein Echtzeit-Bild- und Videoverarbeitungssystem, entwickelt in TouchDesigner. Die Studie untersucht die Anwendung, Kombination und Schichtung visueller Effekte und schafft flexible Ergebnisse. Durch modulares Design und prozedurale Verarbeitung ermöglicht sie die schnelle Produktion vielfältiger Assets.",
     "year": "2026",
     "tools": "TouchDesigner, Premiere Pro"
   }
