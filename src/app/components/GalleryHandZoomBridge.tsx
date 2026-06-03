@@ -17,6 +17,7 @@ type GalleryHandZoomBridgeProps = {
   minDistance: number;
   maxDistance: number;
   defaultDistance: number;
+  defaultAzimuthRad: number;
   defaultPolarRef: MutableRefObject<number | null>;
 };
 
@@ -32,6 +33,7 @@ export function GalleryHandZoomBridge({
   minDistance,
   maxDistance,
   defaultDistance,
+  defaultAzimuthRad,
   defaultPolarRef,
 }: GalleryHandZoomBridgeProps) {
   const hand = useGalleryHandControl();
@@ -64,7 +66,7 @@ export function GalleryHandZoomBridge({
     } else if (s.resetZoomPulse && now - lastPulseMsRef.current > 400) {
       targetRef.current = {
         distance: THREE.MathUtils.clamp(defaultDistance, minDistance, maxDistance),
-        azimuth: 0,
+        azimuth: defaultAzimuthRad,
         polar: defaultPolar,
       };
       lastPulseMsRef.current = now;

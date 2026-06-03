@@ -126,8 +126,45 @@ export function useGalleryHandControl(): GalleryHandControlContextValue | null {
   return useContext(GalleryHandControlContext);
 }
 
-/** El arası mesafe → azimuth (daralt = sağa döner) */
-export const HAND_STEER_AZIMUTH_SPAN_GAIN = 5.8;
+/** Avuçlar birleşince hedef azimuth ofseti (yarım tur) */
+export const HAND_STEER_AZIMUTH_MAX_RAD = Math.PI;
+/** Eller bitişik sayılır — yatay avuç aralığı */
+export const HAND_STEER_SPAN_CLOSE_X = 0.08;
+/** Steer nötründen ekstra açılım → ters yönde −π */
+export const HAND_STEER_SPAN_WIDE_EXTRA = 0.22;
+
+/** Steer azimuth: yalnızca yatay avuç mesafesi (X); Y kaldırma polar ile karışmaz */
+export function steerHandsSpanX(
+  left: PhysicalHandState,
+  right: PhysicalHandState,
+): number {
+  if (!left.detected || !right.detected) return 0;
+  return Math.abs(right.palmX - left.palmX);
+}
+
+/** Nötr spanX'e göre kapanma/açılma → −π…+π ofset (radyan) */
+export function steerAzimuthOffsetFromSpan(
+  spanX: number,
+  neutralSpanX: number,
+): number {
+  const closeDelta = neutralSpanX - spanX;
+  const wideDelta = spanX - neutralSpanX;
+  let offset = 0;
+
+  if (closeDelta > 0) {
+    const range = Math.max(neutralSpanX - HAND_STEER_SPAN_CLOSE_X, 0.12);
+    offset += (closeDelta / range) * HAND_STEER_AZIMUTH_MAX_RAD;
+  }
+  if (wideDelta > 0) {
+    offset -= (wideDelta / HAND_STEER_SPAN_WIDE_EXTRA) * HAND_STEER_AZIMUTH_MAX_RAD;
+  }
+
+  return Math.min(
+    HAND_STEER_AZIMUTH_MAX_RAD,
+    Math.max(-HAND_STEER_AZIMUTH_MAX_RAD, offset),
+  );
+}
+
 /** Sağ el dikey → polar ofset katsayısı */
 export const HAND_STEER_POLAR_PALM_GAIN = 2.1;
 /** Polar hedefe yaklaşma (düşük = daha yumuşak / yavaş) */

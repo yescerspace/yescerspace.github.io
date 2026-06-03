@@ -73,12 +73,6 @@ export type TranslationMessages = {
     brandName: string;
     /** Opt-in gallery hand orbit — shown under the brand name. */
     cameraControl: string;
-    cameraControlOn: string;
-    handGestureAwaitPalm: string;
-    handGestureArmedHint: string;
-    handModeFree: string;
-    handModeSteer: string;
-    handModeDetail: string;
     gestureControlOff: string;
   };
   /** Accessibility labels (not visible copy). */
@@ -192,25 +186,16 @@ const portfolioTr = normalizePortfolioContentJson(portfolioContentTr);
 const categoryEn: Record<GalleryCategory, string> = {
   "Interactive / VR": "Interactive / VR",
   Motion: "Motion",
-  "AUDIOVISUAL INTERACTIONS": "AUDIOVISUAL INTERACTIONS",
   "3D Archive": "3D Archive",
   "2D Archive": "2D Archive",
-  "3D PARTICLE SIMULATION": "3D PARTICLE SIMULATION",
+  New: "New",
 };
 
 const en: TranslationMessages = {
   layout: {
-    documentTitle: "CERRYHUB Portfolio",
-    brandName: "CERRYHUB",
-    cameraControl: "switch to camera control",
-    cameraControlOn: "switch to camera control",
-    handGestureAwaitPalm:
-      "Both hands open (5 fingers), palms toward the camera.",
-    handGestureArmedHint:
-      "Prayer hands: zoom out · Hands up (surrender): reset · Steer: spread/close + right up/down · Project: right scroll, left fist close",
-    handModeFree: "waiting",
-    handModeSteer: "steering",
-    handModeDetail: "project",
+    documentTitle: "YESIM CEREN Portfolio",
+    brandName: "YESIM CEREN",
+    cameraControl: "camera control",
     gestureControlOff: "Turn off gesture control",
   },
   aria: {
@@ -251,13 +236,13 @@ const en: TranslationMessages = {
   },
   about: {
     lead:
-      "Hi, I'm Ceren, a multidisciplinary artist and an interactive installations developer. I'm curious by nature, I enjoy learning, and I try to constantly improve everything rather than leaving things as they are.",
+      "Hi, I'm Ceren, a multidisciplinary designer working across 3D, motion, and interaction. I'm curious by nature, I enjoy learning, and I try to constantly improve everything rather than leaving things as they are.",
     p2:
       "It all started with a bachelor's degree in graphic design. Designs were supposed to stay static, but that didn't last long. I'm drawn to motion and interaction, so over time my work evolved into responsive, immersive experiences that pull people in.",
     p3:
       "Previously, I worked in the game industry from 2019 to 2024, specializing in marketing assets, 3D character art, and environment design for five years. By combining this experience with a master's degree in 3D animation, I refined my production methods and expanded my approach to working with creative tools. After gaining experience with VR systems, game development, and simulations, I became increasingly interested in how rhythm, movement, and interaction shape digital experiences, shifting my focus from static outputs toward evolving systems.",
     p4:
-      "Recently, my focus has been on building more code-based mediums such as audio-reactive visuals, immersive visuals, and creating experiences that feel alive. I'm still exploring, still experimenting, and still making mistakes. For instance, I developed this website through vibe coding, and I'm still adding new things every day. I hope you enjoyed it!",
+      "Recently, my focus has been on building more code-based mediums such as audio-reactive visuals, immersive visuals, and creating experiences that feel alive. I'm still exploring, still experimenting, and still making mistakes.",
   },
   contact: {
     headline:
@@ -287,17 +272,9 @@ const en: TranslationMessages = {
 
 const de: TranslationMessages = {
   layout: {
-    documentTitle: "CERRYHUB Portfolio",
-    brandName: "CERRYHUB",
-    cameraControl: "switch to camera control",
-    cameraControlOn: "switch to camera control",
-    handGestureAwaitPalm:
-      "Beide Hände offen (5 Finger), Handflächen zur Kamera.",
-    handGestureArmedHint:
-      "Gebetshände: rauszoomen · Hände hoch: zurücksetzen · Steuern: näher/weiter + rechts · Projekt: rechts scrollen, Faust schließen",
-    handModeFree: "warten",
-    handModeSteer: "steuern",
-    handModeDetail: "projekt",
+    documentTitle: "YESIM CEREN Portfolio",
+    brandName: "YESIM CEREN",
+    cameraControl: "camera control",
     gestureControlOff: "Gestensteuerung ausschalten",
   },
   aria: {
@@ -321,10 +298,9 @@ const de: TranslationMessages = {
     all: "Alle",
     "Interactive / VR": "Interaktiv / VR",
     Motion: "BEWEGTBILD",
-    "AUDIOVISUAL INTERACTIONS": "AUDIOVISUALE INTERAKTIONEN",
     "3D Archive": "3D-Archiv",
     "2D Archive": "2D-Archiv",
-    "3D PARTICLE SIMULATION": "3D-PARTIKEL-SIMULATION",
+    New: "Neu",
   },
   gallery: {
     exploreHint: "Scrollen, ziehen… deine Kontrolle, einfach volle!",
@@ -343,13 +319,13 @@ const de: TranslationMessages = {
   },
   about: {
     lead:
-      "Hallo, ich bin Ceren, eine multidisziplinäre Künstlerin und Entwicklerin interaktiver Installationen. Ich bin von Natur aus neugierig, lerne gerne und versuche ständig, alles weiterzuentwickeln, anstatt es so zu lassen, wie es ist.",
+      "Hallo, ich bin Ceren, eine multidisziplinäre Designerin mit Schwerpunkt auf 3D, Motion und Interaktion. Ich bin von Natur aus neugierig, lerne gerne und versuche ständig, Dinge weiterzuentwickeln, anstatt sie so zu lassen, wie sie sind.",
     p2:
       "Alles begann mit einem Bachelorabschluss in Grafikdesign. Designs sollten eigentlich statisch bleiben, aber das hielt nicht lange an. Ich fühlte mich schon immer zu Bewegung und Interaktion hingezogen, sodass sich meine Arbeit mit der Zeit zu responsiven, immersiven Erfahrungen entwickelte, die Menschen hineinziehen.",
     p3:
       "Zuvor arbeitete ich von 2019 bis 2024 in der Spielebranche und spezialisierte mich über fünf Jahre hinweg auf Marketing-Assets, 3D-Character-Art und Environment Design. Durch die Verbindung meines Hintergrunds mit einem Masterabschluss in 3D-Animation konnte ich meine Produktionsmethoden verfeinern und meine Arbeitsweise mit digitalen Tools erweitern. Nachdem ich Erfahrungen mit VR-Systemen, Game Development und Simulationen gesammelt hatte, begann ich mich stärker darauf zu konzentrieren, wie Rhythmus, Bewegung und Interaktion digitale Erfahrungen formen, und verlagerte meinen Fokus von statischen Ergebnissen hin zu sich entwickelnden Systemen.",
     p4:
-      "In letzter Zeit beschäftige ich mich verstärkt mit codebasierten Medien wie audioreaktiven Visuals, immersiven Visuals und der Gestaltung von Erfahrungen, die sich lebendig anfühlen. Ich entdecke weiterhin Neues, experimentiere weiter und mache immer noch Fehler. Zum Beispiel habe ich diese Website durch „Vibe Coding“ entwickelt und füge jeden Tag neue Dinge hinzu. Ich hoffe, sie hat euch gefallen!",
+      "In letzter Zeit beschäftige ich mich verstärkt mit codebasierten Medien wie audioreaktiven Visuals, immersiven Visuals und der Gestaltung von Erfahrungen, die sich lebendig anfühlen. Ich entdecke weiterhin Neues, experimentiere weiter und mache immer noch Fehler.",
   },
   contact: {
     headline:
@@ -379,17 +355,9 @@ const de: TranslationMessages = {
 
 const tr: TranslationMessages = {
   layout: {
-    documentTitle: "CERRYHUB Portfolio",
-    brandName: "CERRYHUB",
-    cameraControl: "switch to camera control",
-    cameraControlOn: "switch to camera control",
-    handGestureAwaitPalm:
-      "İki el açık (5 parmak), avuçlar kameraya dönük.",
-    handGestureArmedHint:
-      "Dua elleri: uzaklaş · Eller yukarı (teslim): sıfırla · Kontrol: yakın/açık + sağ yukarı/aşağı · Proje: sağ kaydır, sol yumruk kapat",
-    handModeFree: "bekleme",
-    handModeSteer: "kontrol",
-    handModeDetail: "proje",
+    documentTitle: "YESIM CEREN Portfolio",
+    brandName: "YESIM CEREN",
+    cameraControl: "camera control",
     gestureControlOff: "Jest kontrolünü kapat",
   },
   aria: {
@@ -413,10 +381,9 @@ const tr: TranslationMessages = {
     all: "Tümü",
     "Interactive / VR": "Etkileşimli / VR",
     Motion: "Hareket",
-    "AUDIOVISUAL INTERACTIONS": "AUDIOVISUAL ETKİLEŞİMLER",
     "3D Archive": "3D arşiv",
     "2D Archive": "2D arşiv",
-    "3D PARTICLE SIMULATION": "3D PARÇACIK SİMÜLASYONU",
+    New: "Yeni",
   },
   gallery: {
     exploreHint: "Kaydır, sürükle.. kontrol sende!",
@@ -435,13 +402,13 @@ const tr: TranslationMessages = {
   },
   about: {
     lead:
-      "Merhaba, ben Ceren, multidisipliner artist ve interaktif enstalasyonlar geliştiren bir tasarımcıyım. Doğası gereği meraklıyım, öğrenmeyi seviyorum ve her şeyi olduğu gibi bırakmak yerine sürekli geliştirmeye çalışıyorum.",
+      "Merhaba, ben Ceren. 3D, motion ve etkileşim alanlarında çalışan multidisipliner bir tasarımcıyım. Meraklıyım, öğrenmeyi seviyorum ve bir şeyleri olduğu gibi bırakmak yerine sürekli geliştirmeye çalışıyorum.",
     p2:
       "Her şey grafik tasarım lisansıyla başladı. Tasarımların sabit kalması gerekiyordu ama bu çok uzun sürmedi. Hareket ve etkileşime her zaman ilgim vardı, bu yüzden zamanla işlerim insanı içine çeken immersif deneyimlere dönüştü.",
     p3:
       "Daha önce, 2019–2024 yılları arasında oyun sektöründe çalıştım ve beş yıl boyunca pazarlama materyalleri, 3D karakter tasarımı ve çevre tasarımı alanlarında uzmanlaştım. Deneyimlerimi 3D animasyon alanındaki yüksek lisansımla birleştirerek üretim yöntemlerimi geliştirme ve araçlarla çalışma biçimimi genişletme fırsatı buldum. VR sistemleri, oyun geliştirme ve simülasyonlar üzerine deneyim kazandıktan sonra günümüzde ritim, hareket ve etkileşimin dijital deneyimleri nasıl şekillendirdiğine daha fazla odaklanmaya başladım ve statik çıktılardan evrilen sistemlere yöneldim.",
     p4:
-      "Son zamanlarda odağım; ses tepkili görseller, immersif görseller ve canlı hissettiren deneyimler gibi daha kod tabanlı mecralar üretmek üzerine yoğunlaşıyor. Hâlâ keşfediyor, hâlâ deniyor ve hâlâ hata yapıyorum. Örneğin bu web sitesini vibe coding ile geliştirdim ve hâlâ her gün yeni şeyler ekliyorum. Umarım hoşunuza gitmiştir!",
+      "Son zamanlarda odağım; ses tepkili görseller, immersif görseller ve canlı hissettiren deneyimler gibi daha kod tabanlı mecralar üretmek üzerine yoğunlaşıyor. Hâlâ keşfediyor, hâlâ deniyor ve hâlâ hata yapıyorum.",
   },
   contact: {
     headline:

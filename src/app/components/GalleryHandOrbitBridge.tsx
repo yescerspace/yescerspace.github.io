@@ -5,9 +5,10 @@ import * as THREE from "three";
 import type { OrbitControls as StdOrbitControls } from "three-stdlib";
 import {
   HAND_STEER_AZIMUTH_SMOOTH,
-  HAND_STEER_AZIMUTH_SPAN_GAIN,
   HAND_STEER_POLAR_PALM_GAIN,
   HAND_STEER_POLAR_SMOOTH,
+  steerAzimuthOffsetFromSpan,
+  steerHandsSpanX,
   useGalleryHandControl,
 } from "./galleryHandControl";
 
@@ -67,7 +68,7 @@ export function GalleryHandOrbitBridge({
     if (!wasSteerRef.current) {
       polarNeutralRef.current = controls.getPolarAngle();
       rightPalmNeutralRef.current = s.userRight.palmY;
-      spanNeutralRef.current = s.handsSpan;
+      spanNeutralRef.current = steerHandsSpanX(s.userLeft, s.userRight);
       azimuthNeutralRef.current = controls.getAzimuthalAngle();
       smoothedPolarRef.current = controls.getPolarAngle();
       smoothedAzimuthRef.current = controls.getAzimuthalAngle();
@@ -90,10 +91,11 @@ export function GalleryHandOrbitBridge({
     );
     controls.setPolarAngle(smoothedPolarRef.current);
 
-    const neutralSpan = spanNeutralRef.current ?? s.handsSpan;
+    const spanX = steerHandsSpanX(s.userLeft, s.userRight);
+    const neutralSpanX = spanNeutralRef.current ?? spanX;
     const neutralAz = azimuthNeutralRef.current ?? controls.getAzimuthalAngle();
-    const spanOffset = neutralSpan - s.handsSpan;
-    const targetAzimuth = neutralAz + spanOffset * HAND_STEER_AZIMUTH_SPAN_GAIN;
+    const targetAzimuth =
+      neutralAz + steerAzimuthOffsetFromSpan(spanX, neutralSpanX);
 
     if (smoothedAzimuthRef.current == null) {
       smoothedAzimuthRef.current = controls.getAzimuthalAngle();
