@@ -1,7 +1,7 @@
 {
   "sourceOfTruth": "Flat layout: disk gallery/<n>/ for numbered slots; manifest projectKey work/<n>. hidden: true = galeride yok; false veya yok = görünür. Taslak: slug -- veya --* (gallery/--/). gallery:sync images[] + lastUpdated.",
   "version": 1,
-  "lastUpdated": "2026-06-03T13:29:17.358Z",
+  "lastUpdated": "2026-06-04T10:17:58.309Z",
   "projects": [
     {
       "category": "3D Archive",
@@ -102,7 +102,7 @@
       "category": "Motion",
       "categoryFolder": "work",
       "slug": "8",
-      "hidden": true,
+      "hidden": false,
       "images": [
         "gallery/8/00.jpg",
         "gallery/8/1.mp4"
