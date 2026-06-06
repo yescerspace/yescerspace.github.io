@@ -156,14 +156,31 @@ const WORK2_ARTSTATION_BUTTON_ENABLED = false;
 /** Initial playback level (0–1) when a clip loads; audience can change it with the player controls. */
 const DETAIL_VIDEO_VOLUME = 0.2;
 
+function pauseDetailVideoElement(v: HTMLVideoElement): void {
+  delete v.dataset.detailPlayPending;
+  v.pause();
+  v.muted = true;
+}
+
+/** Stop every `<video>` under a modal root (close / unmount). */
+function pauseAllDetailVideosIn(root: ParentNode | null | undefined): void {
+  if (!root) return;
+  root.querySelectorAll("video").forEach((node) => {
+    pauseDetailVideoElement(node);
+  });
+}
+
 function tryPlayDetailVideo(v: HTMLVideoElement): void {
+  if (!v.isConnected) return;
   v.volume = DETAIL_VIDEO_VOLUME;
   if (v.preload !== "auto") {
     v.preload = "auto";
   }
   const attempt = () => {
+    if (!v.isConnected) return;
     v.muted = false;
     void v.play().catch(() => {
+      if (!v.isConnected) return;
       v.muted = true;
       void v.play().catch(() => {});
     });
@@ -176,6 +193,7 @@ function tryPlayDetailVideo(v: HTMLVideoElement): void {
     "canplay",
     () => {
       delete v.dataset.detailPlayPending;
+      if (!v.isConnected) return;
       attempt();
     },
     { once: true },
@@ -257,9 +275,7 @@ function syncDetailVideoPlayback(
     if (i === playIndex) {
       tryPlayDetailVideo(v);
     } else {
-      delete v.dataset.detailPlayPending;
-      v.pause();
-      v.muted = true;
+      pauseDetailVideoElement(v);
     }
   }
 }
@@ -3255,12 +3271,15 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
 
   useEffect(() => {
     return () => {
+      for (const v of videoRefs.current) {
+        if (v) pauseDetailVideoElement(v);
+      }
       if (playbackRafRef.current !== 0) {
         cancelAnimationFrame(playbackRafRef.current);
         playbackRafRef.current = 0;
       }
     };
-  }, []);
+  }, [detailUrlsKey]);
 
   useEffect(() => {
     if (detailUrls.length === 0) return;
@@ -3534,8 +3553,12 @@ export function Gallery3D({
   const shareCopiedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  const detailModalScrollRef = useRef<HTMLDivElement>(null);
+  const modalDetailWheelRootRef = useRef<HTMLDivElement>(null);
+  const detailInfoRef = useRef<HTMLDivElement>(null);
 
   const closeModal = useCallback(() => {
+    pauseAllDetailVideosIn(modalDetailWheelRootRef.current);
     navigate(
       { pathname: "/", hash: location.hash, search: "" },
       { replace: true },
@@ -3657,10 +3680,6 @@ export function Gallery3D({
     dismissShareCopiedSoon,
   ]);
 
-  const detailModalScrollRef = useRef<HTMLDivElement>(null);
-  const modalDetailWheelRootRef = useRef<HTMLDivElement>(null);
-  const detailInfoRef = useRef<HTMLDivElement>(null);
-
   useLayoutEffect(() => {
     if (!detailModalOpen) return;
     const root = modalDetailWheelRootRef.current;
@@ -3714,10 +3733,12 @@ export function Gallery3D({
 
   useEffect(() => {
     if (!detailModalOpen) {
+      pauseAllDetailVideosIn(modalDetailWheelRootRef.current);
       clearGalleryDetailVideoPreload();
       return;
     }
     return () => {
+      pauseAllDetailVideosIn(modalDetailWheelRootRef.current);
       clearGalleryDetailVideoPreload();
     };
   }, [detailModalOpen]);
