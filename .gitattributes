@@ -1,2 +1,4 @@
 gallery/12/1.mp4 filter=lfs diff=lfs merge=lfs -text
 public/gallery/12/1.mp4 filter=lfs diff=lfs merge=lfs -text
+gallery/14/1.mp4 filter=lfs diff=lfs merge=lfs -text
+public/gallery/14/1.mp4 filter=lfs diff=lfs merge=lfs -text
