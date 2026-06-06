@@ -226,13 +226,16 @@ function pickDetailVideoPlayIndex(
   itemEls: readonly (HTMLElement | null)[],
   forcedPlayIndex: number | null,
   readingEl: HTMLElement | null = null,
+  userPausedSingleVideo = false,
 ): number {
   const playableVideos = detailPlayableVideoIndices(detailUrls, srcFor, failed);
   const soleVideoIndex =
     playableVideos.length === 1 ? playableVideos[0]! : -1;
 
-  /** One clip: keep playing while reading info below (modal still open). */
-  if (soleVideoIndex >= 0) return soleVideoIndex;
+  /** One clip: keep playing while reading info below unless the viewer paused. */
+  if (soleVideoIndex >= 0) {
+    return userPausedSingleVideo ? -1 : soleVideoIndex;
+  }
 
   if (detailReadingModeActive(readingEl)) return -1;
 
@@ -277,6 +280,7 @@ function syncDetailVideoPlayback(
   videoEls: readonly (HTMLVideoElement | null)[],
   forcedPlayIndex: number | null = null,
   readingEl: HTMLElement | null = null,
+  userPausedSingleVideo = false,
 ): void {
   const playIndex = pickDetailVideoPlayIndex(
     detailUrls,
@@ -285,6 +289,7 @@ function syncDetailVideoPlayback(
     itemEls,
     forcedPlayIndex,
     readingEl,
+    userPausedSingleVideo,
   );
 
   for (let i = 0; i < videoEls.length; i++) {
@@ -3194,8 +3199,16 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
   const forcedPlayIndexRef = useRef<number | null>(null);
+  const userPausedVideoRef = useRef(false);
 
   const detailUrlsKey = useMemo(() => detailUrls.join("\0"), [detailUrls]);
+  const isSingleVideoDetail = useMemo(() => {
+    let n = 0;
+    for (const u of detailUrls) {
+      if (u && isVideoUrl(u)) n++;
+    }
+    return n === 1;
+  }, [detailUrls]);
   const heroUrl = useMemo(() => primaryGalleryTextureUrl(urls), [urls]);
   const heroSrc = useMemo(
     () => withGalleryAssetCacheBust(heroUrl),
@@ -3254,6 +3267,7 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
       videoRefs.current,
       forcedPlayIndexRef.current,
       readingEl,
+      userPausedVideoRef.current,
     );
   }, [detailUrls, srcFor, failed, muteWhenReadingRef]);
 
@@ -3270,7 +3284,8 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
     itemRefs.current.length = detailUrls.length;
     videoRefs.current.length = detailUrls.length;
     forcedPlayIndexRef.current = null;
-  }, [detailUrls.length]);
+    userPausedVideoRef.current = false;
+  }, [detailUrls.length, detailUrlsKey]);
 
   useEffect(() => {
     const onFullscreenChanged = () => {
@@ -3385,8 +3400,10 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
     <div
       ref={setScrollRef}
       className={cn(
-        "max-h-[min(70vh,580px)] w-full min-w-0 overflow-y-auto overscroll-y-auto bg-app-shell-bg/35 [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar]:w-0",
-        className,
+        isSingleVideoDetail
+          ? "h-fit w-full min-w-0 overflow-hidden bg-transparent"
+          : "max-h-[min(70vh,580px)] w-full min-w-0 overflow-y-auto overscroll-y-auto bg-transparent [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar]:w-0",
+        !isSingleVideoDetail && className,
       )}
       role="region"
       aria-label={heroAlt}
@@ -3427,7 +3444,7 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
                     : ({
                         fetchPriority: "low",
                       } as VideoHTMLAttributes<HTMLVideoElement>))}
-                  className="block h-auto max-w-full w-full bg-black/20"
+                  className="block h-auto max-w-full w-full bg-black"
                   aria-label={label}
                   onLoadedMetadata={() => {
                     markDetailMediaReady(url);
@@ -3445,12 +3462,16 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
                   onCanPlay={schedulePlaybackSync}
                   onPlay={(e) => {
                     if (e.nativeEvent.isTrusted) {
+                      userPausedVideoRef.current = false;
                       forcedPlayIndexRef.current = i;
                     }
                     schedulePlaybackSync();
                   }}
-                  onPause={() => {
-                    if (forcedPlayIndexRef.current === i) {
+                  onPause={(e) => {
+                    if (e.nativeEvent.isTrusted) {
+                      userPausedVideoRef.current = true;
+                      forcedPlayIndexRef.current = null;
+                    } else if (forcedPlayIndexRef.current === i) {
                       forcedPlayIndexRef.current = null;
                     }
                     schedulePlaybackSync();
@@ -3893,10 +3914,10 @@ export function Gallery3D({
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.94, opacity: 0, y: 20 }}
               transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-              className="relative flex w-full max-w-3xl min-h-0 flex-col gap-10 pb-4"
+              className="relative flex w-full max-w-3xl min-h-0 flex-col gap-6 pb-4"
               onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
             >
-              <div className="min-h-0 w-full min-w-0 shrink-0 bg-app-shell-bg">
+              <div className="min-h-0 w-full min-w-0 shrink-0">
                 <ProjectImageScroll
                   ref={detailModalScrollRef}
                   outerScrollRef={modalDetailWheelRootRef}
@@ -3905,7 +3926,13 @@ export function Gallery3D({
                   key={`${selectedImage.projectKey}|${selectedImage.images.join("|")}`}
                   urls={selectedImage.images}
                   heroAlt={selectedPortfolioCopy.title}
-                  className="max-h-[min(70vh,580px)]"
+                  className={
+                    detailPageMediaUrls(selectedImage.images).filter((u) =>
+                      isVideoUrl(u),
+                    ).length === 1
+                      ? undefined
+                      : "max-h-[min(70vh,580px)]"
+                  }
                 />
               </div>
 
