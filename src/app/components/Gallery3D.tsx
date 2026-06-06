@@ -3905,7 +3905,7 @@ export function Gallery3D({
                   key={`${selectedImage.projectKey}|${selectedImage.images.join("|")}`}
                   urls={selectedImage.images}
                   heroAlt={selectedPortfolioCopy.title}
-                  className="min-h-[min(70vh,580px)] max-h-[min(70vh,580px)]"
+                  className="max-h-[min(70vh,580px)]"
                 />
               </div>
 
