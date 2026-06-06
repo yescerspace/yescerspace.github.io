@@ -206,6 +206,19 @@ function detailReadingModeActive(readingEl: HTMLElement | null): boolean {
   return r.top < window.innerHeight * 0.78;
 }
 
+function detailPlayableVideoIndices(
+  detailUrls: readonly string[],
+  srcFor: (u: string) => string,
+  failed: Record<string, boolean>,
+): number[] {
+  const indices: number[] = [];
+  for (let i = 0; i < detailUrls.length; i++) {
+    const u = detailUrls[i];
+    if (u && !failed[u] && isVideoUrl(srcFor(u))) indices.push(i);
+  }
+  return indices;
+}
+
 function pickDetailVideoPlayIndex(
   detailUrls: readonly string[],
   srcFor: (u: string) => string,
@@ -214,6 +227,13 @@ function pickDetailVideoPlayIndex(
   forcedPlayIndex: number | null,
   readingEl: HTMLElement | null = null,
 ): number {
+  const playableVideos = detailPlayableVideoIndices(detailUrls, srcFor, failed);
+  const soleVideoIndex =
+    playableVideos.length === 1 ? playableVideos[0]! : -1;
+
+  /** One clip: keep playing while reading info below (modal still open). */
+  if (soleVideoIndex >= 0) return soleVideoIndex;
+
   if (detailReadingModeActive(readingEl)) return -1;
 
   const viewBottom =
