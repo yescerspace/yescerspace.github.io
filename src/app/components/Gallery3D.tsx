@@ -170,17 +170,20 @@ function pauseAllDetailVideosIn(root: ParentNode | null | undefined): void {
   });
 }
 
-function tryPlayDetailVideo(v: HTMLVideoElement): void {
-  if (!v.isConnected) return;
+function tryPlayDetailVideo(
+  v: HTMLVideoElement,
+  shouldBlockPlay?: () => boolean,
+): void {
+  if (!v.isConnected || shouldBlockPlay?.()) return;
   v.volume = DETAIL_VIDEO_VOLUME;
   if (v.preload !== "auto") {
     v.preload = "auto";
   }
   const attempt = () => {
-    if (!v.isConnected) return;
+    if (!v.isConnected || shouldBlockPlay?.()) return;
     v.muted = false;
     void v.play().catch(() => {
-      if (!v.isConnected) return;
+      if (!v.isConnected || shouldBlockPlay?.()) return;
       v.muted = true;
       void v.play().catch(() => {});
     });
@@ -193,7 +196,7 @@ function tryPlayDetailVideo(v: HTMLVideoElement): void {
     "canplay",
     () => {
       delete v.dataset.detailPlayPending;
-      if (!v.isConnected) return;
+      if (!v.isConnected || shouldBlockPlay?.()) return;
       attempt();
     },
     { once: true },
@@ -281,6 +284,7 @@ function syncDetailVideoPlayback(
   forcedPlayIndex: number | null = null,
   readingEl: HTMLElement | null = null,
   userPausedSingleVideo = false,
+  shouldBlockPlay?: () => boolean,
 ): void {
   const playIndex = pickDetailVideoPlayIndex(
     detailUrls,
@@ -298,7 +302,7 @@ function syncDetailVideoPlayback(
     const u = detailUrls[i];
     if (!u || failed[u] || !isVideoUrl(srcFor(u))) continue;
     if (i === playIndex) {
-      tryPlayDetailVideo(v);
+      tryPlayDetailVideo(v, shouldBlockPlay);
     } else {
       pauseDetailVideoElement(v);
     }
@@ -3245,6 +3249,7 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
 
   const syncPlayback = useCallback(() => {
     const readingEl = muteWhenReadingRef?.current ?? null;
+    const userPaused = userPausedVideoRef.current;
     const scrollPick = pickDetailVideoPlayIndex(
       detailUrls,
       srcFor,
@@ -3252,6 +3257,7 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
       itemRefs.current,
       null,
       readingEl,
+      userPaused,
     );
     if (
       forcedPlayIndexRef.current != null &&
@@ -3267,7 +3273,8 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
       videoRefs.current,
       forcedPlayIndexRef.current,
       readingEl,
-      userPausedVideoRef.current,
+      userPaused,
+      () => userPausedVideoRef.current,
     );
   }, [detailUrls, srcFor, failed, muteWhenReadingRef]);
 
@@ -3408,7 +3415,7 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
       role="region"
       aria-label={heroAlt}
     >
-      <div className="flex w-full flex-col gap-8">
+      <div className={cn("flex w-full flex-col", isSingleVideoDetail ? "" : "gap-8")}>
         {detailUrls.map((url, i) => {
           const src = failed[url]
             ? fallbackImageUrl()
@@ -3426,7 +3433,10 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
               ref={(el) => {
                 itemRefs.current[i] = el;
               }}
-              className="w-full min-h-[4rem] shrink-0"
+              className={cn(
+                "w-full shrink-0",
+                !isSingleVideoDetail && "min-h-[4rem]",
+              )}
             >
               {showVideo ? (
                 <video
@@ -3448,7 +3458,7 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
                   aria-label={label}
                   onLoadedMetadata={() => {
                     markDetailMediaReady(url);
-                    schedulePlaybackSync();
+                    if (!userPausedVideoRef.current) schedulePlaybackSync();
                   }}
                   onLoadedData={(e) => {
                     const v = e.currentTarget;
@@ -3457,9 +3467,11 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
                       v.volume = DETAIL_VIDEO_VOLUME;
                     }
                     markDetailMediaReady(url);
-                    schedulePlaybackSync();
+                    if (!userPausedVideoRef.current) schedulePlaybackSync();
                   }}
-                  onCanPlay={schedulePlaybackSync}
+                  onCanPlay={() => {
+                    if (!userPausedVideoRef.current) schedulePlaybackSync();
+                  }}
                   onPlay={(e) => {
                     if (e.nativeEvent.isTrusted) {
                       userPausedVideoRef.current = false;
@@ -3914,7 +3926,7 @@ export function Gallery3D({
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.94, opacity: 0, y: 20 }}
               transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-              className="relative flex w-full max-w-3xl min-h-0 flex-col gap-6 pb-4"
+              className="relative flex w-full max-w-3xl min-h-0 flex-col pb-4"
               onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
             >
               <div className="min-h-0 w-full min-w-0 shrink-0">
@@ -3945,7 +3957,14 @@ export function Gallery3D({
                   duration: 0.4,
                   ease: [0.25, 0.46, 0.45, 0.94],
                 }}
-                className="flex min-h-0 w-full flex-col gap-10 justify-start"
+                className={cn(
+                  "flex min-h-0 w-full flex-col gap-10 justify-start",
+                  detailPageMediaUrls(selectedImage.images).filter((u) =>
+                    isVideoUrl(u),
+                  ).length === 1
+                    ? "pt-4"
+                    : "pt-0",
+                )}
               >
                 <div>
                   <p className="mb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
