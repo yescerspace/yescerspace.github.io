@@ -3957,14 +3957,7 @@ export function Gallery3D({
                   duration: 0.4,
                   ease: [0.25, 0.46, 0.45, 0.94],
                 }}
-                className={cn(
-                  "flex min-h-0 w-full flex-col gap-10 justify-start",
-                  detailPageMediaUrls(selectedImage.images).filter((u) =>
-                    isVideoUrl(u),
-                  ).length === 1
-                    ? "pt-4"
-                    : "pt-0",
-                )}
+                className="flex min-h-0 w-full flex-col gap-10 justify-start pt-8 sm:pt-10"
               >
                 <div>
                   <p className="mb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
