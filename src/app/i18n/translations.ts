@@ -244,7 +244,7 @@ const en: TranslationMessages = {
     p3:
       "Previously, I worked in the game industry from 2019 to 2024, specializing in marketing assets, 3D character art, and environment design for five years. By combining this experience with a master's degree in 3D animation, I refined my production methods and expanded my approach to working with creative tools. After gaining experience with VR systems, game development, and simulations, I became increasingly interested in how rhythm, movement, and interaction shape digital experiences, shifting my focus from static outputs toward evolving systems.",
     p4:
-      "Recently, my focus has been on building more code-based mediums such as audio-reactive visuals, immersive visuals, and creating experiences that feel alive. I'm still exploring, still experimenting, and still making mistakes.",
+      "Recently, my focus has been on building more code-based mediums such as audio-reactive visuals, immersive interactions, and creating experiences that feel alive. I'm still exploring, still experimenting, and still making mistakes.",
   },
   contact: {
     headline:
@@ -329,7 +329,7 @@ const de: TranslationMessages = {
     p3:
       "Zuvor arbeitete ich von 2019 bis 2024 in der Spielebranche und spezialisierte mich über fünf Jahre hinweg auf Marketing-Assets, 3D-Character-Art und Environment Design. Durch die Verbindung meines Hintergrunds mit einem Masterabschluss in 3D-Animation konnte ich meine Produktionsmethoden verfeinern und meine Arbeitsweise mit digitalen Tools erweitern. Nachdem ich Erfahrungen mit VR-Systemen, Game Development und Simulationen gesammelt hatte, begann ich mich stärker darauf zu konzentrieren, wie Rhythmus, Bewegung und Interaktion digitale Erfahrungen formen, und verlagerte meinen Fokus von statischen Ergebnissen hin zu sich entwickelnden Systemen.",
     p4:
-      "In letzter Zeit beschäftige ich mich verstärkt mit codebasierten Medien wie audioreaktiven Visuals, immersiven Visuals und der Gestaltung von Erfahrungen, die sich lebendig anfühlen. Ich entdecke weiterhin Neues, experimentiere weiter und mache immer noch Fehler.",
+      "In letzter Zeit liegt mein Fokus stärker auf codebasierten Medien wie audioreaktiven Visuals, immersiven Interaktionen und der Gestaltung von Erlebnissen, die sich lebendig anfühlen. Ich bin noch immer am Erkunden, Experimentieren und mache weiterhin Fehler.",
   },
   contact: {
     headline:
@@ -414,7 +414,7 @@ const tr: TranslationMessages = {
     p3:
       "Daha önce, 2019–2024 yılları arasında oyun sektöründe çalıştım ve beş yıl boyunca pazarlama materyalleri, 3D karakter tasarımı ve çevre tasarımı alanlarında uzmanlaştım. Deneyimlerimi 3D animasyon alanındaki yüksek lisansımla birleştirerek üretim yöntemlerimi geliştirme ve araçlarla çalışma biçimimi genişletme fırsatı buldum. VR sistemleri, oyun geliştirme ve simülasyonlar üzerine deneyim kazandıktan sonra günümüzde ritim, hareket ve etkileşimin dijital deneyimleri nasıl şekillendirdiğine daha fazla odaklanmaya başladım ve statik çıktılardan evrilen sistemlere yöneldim.",
     p4:
-      "Son zamanlarda odağım; ses tepkili görseller, immersif görseller ve canlı hissettiren deneyimler gibi daha kod tabanlı mecralar üretmek üzerine yoğunlaşıyor. Hâlâ keşfediyor, hâlâ deniyor ve hâlâ hata yapıyorum.",
+      "Son zamanlarda odağım, sesle tepki veren görseller, etkileşimli deneyimler ve canlı hissettiren deneyimler gibi daha çok kod tabanlı üretimlere yöneldi. Hâlâ keşfediyorum, hâlâ deniyorum ve hatalar yapıyorum.",
   },
   contact: {
     headline:

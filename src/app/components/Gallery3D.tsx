@@ -4070,7 +4070,7 @@ export function Gallery3D({
               <button
                 type="button"
                 onClick={closeModal}
-                className="absolute -right-1 -top-1 rounded-full bg-card p-2.5 text-foreground transition-transform hover:scale-105"
+                className="absolute top-2 left-full ml-2 shrink-0 rounded-full bg-card p-2.5 text-foreground transition-transform hover:scale-105 sm:ml-3"
                 style={{
                   boxShadow:
                     "0 4px 24px color-mix(in oklch, oklch(0.05 0.02 268) 55%, transparent)",
