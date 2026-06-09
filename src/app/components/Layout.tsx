@@ -5,6 +5,7 @@ import { LanguageSwitcher } from "./LanguageSwitcher";
 import { FooterNav } from "./FooterNav";
 import { CameraControlButton } from "./CameraControlButton";
 import { GalleryHandControlProvider } from "./galleryHandControl";
+import { syncDocumentCanonical } from "../config/site";
 import { cn } from "./ui/utils";
 
 function LayoutShell() {
@@ -26,6 +27,10 @@ function LayoutShell() {
   useEffect(() => {
     document.title = messages.layout.documentTitle;
   }, [messages.layout.documentTitle]);
+
+  useEffect(() => {
+    syncDocumentCanonical(pathname);
+  }, [pathname]);
 
   return (
     <div className="flex h-dvh max-h-dvh min-h-0 overflow-hidden bg-background">

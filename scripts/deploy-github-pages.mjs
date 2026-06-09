@@ -90,7 +90,7 @@ if (existsSync(manifestPath)) {
 }
 
 console.log("→ git add (src + deploy artifacts)");
-run("git add -u src/");
+run("git add src/");
 run(`git add ${toAdd.map((p) => JSON.stringify(p)).join(" ")}`);
 if (existsSync(resolve(root, "index.template.html"))) {
   run("git add index.template.html");
