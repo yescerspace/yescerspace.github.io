@@ -16,7 +16,6 @@ export function About() {
         <p>{a.lead}</p>
         <p>{a.p2}</p>
         <p>{a.p3}</p>
-        <p>{a.p4}</p>
       </div>
     </motion.div>
   );

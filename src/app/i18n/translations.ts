@@ -119,7 +119,6 @@ export type TranslationMessages = {
     lead: string;
     p2: string;
     p3: string;
-    p4: string;
   };
   contact: {
     headline: string;
@@ -238,13 +237,11 @@ const en: TranslationMessages = {
   },
   about: {
     lead:
-      "Hi, I'm Ceren, a multidisciplinary designer working across 3D, motion, and interaction. I'm curious by nature, I enjoy learning, and I try to constantly improve everything rather than leaving things as they are.",
+      "Hi, I'm Ceren, a multidisciplinary designer working across 3D, motion, and interaction. I'm curious by nature, I enjoy learning, and I tend to constantly refine and evolve what I create rather than leaving things as they are.",
     p2:
-      "It all started with a bachelor's degree in graphic design. Designs were supposed to stay static, but that didn't last long. I'm drawn to motion and interaction, so over time my work evolved into responsive, immersive experiences that pull people in.",
+      "My journey started with graphic design, where visuals were meant to stay static. But that didn't last long. I became more interested in what happens when design starts to move, react, and invite participation. Over time, this curiosity led me into game development, animation, immersive media, and interactive experiences, where I explored how rhythm, movement, and interaction shape the way people experience digital worlds.",
     p3:
-      "Previously, I worked in the game industry from 2019 to 2024, specializing in marketing assets, 3D character art, and environment design for five years. By combining this experience with a master's degree in 3D animation, I refined my production methods and expanded my approach to working with creative tools. After gaining experience with VR systems, game development, and simulations, I became increasingly interested in how rhythm, movement, and interaction shape digital experiences, shifting my focus from static outputs toward evolving systems.",
-    p4:
-      "Recently, my focus has been on building more code-based mediums such as audio-reactive visuals, immersive interactions, and creating experiences that feel alive. I'm still exploring, still experimenting, and still making mistakes.",
+      "Today, I'm particularly interested in creative technologies, audio-reactive visuals, and generative systems that blur the boundaries between design, motion, and code. I enjoy experimenting, learning new tools, and building experiences that feel alive. I'm currently focused on audio-reactive visuals, generative design, and real-time visual environments.",
   },
   contact: {
     headline:
@@ -323,13 +320,11 @@ const de: TranslationMessages = {
   },
   about: {
     lead:
-      "Hallo, ich bin Ceren, eine multidisziplinäre Designerin mit Schwerpunkt auf 3D, Motion und Interaktion. Ich bin von Natur aus neugierig, lerne gerne und versuche ständig, Dinge weiterzuentwickeln, anstatt sie so zu lassen, wie sie sind.",
+      "Hi, ich bin Ceren, eine multidisziplinäre Designerin, die in den Bereichen 3D, Motion und Interaktion arbeitet. Ich bin von Natur aus neugierig, lerne gerne dazu und versuche ständig, meine Arbeiten weiterzuentwickeln, anstatt sie unverändert zu lassen.",
     p2:
-      "Alles begann mit einem Bachelorabschluss in Grafikdesign. Designs sollten eigentlich statisch bleiben, aber das hielt nicht lange an. Ich fühlte mich schon immer zu Bewegung und Interaktion hingezogen, sodass sich meine Arbeit mit der Zeit zu responsiven, immersiven Erfahrungen entwickelte, die Menschen hineinziehen.",
+      "Meine Reise begann im Grafikdesign, wo Gestaltung eigentlich statisch bleiben sollte. Doch das hielt nicht lange an. Mich hat schnell interessiert, was passiert, wenn Design beginnt sich zu bewegen, zu reagieren und zur Interaktion einzuladen. Diese Neugier führte mich über die Zeit in die Spieleentwicklung, Animation, immersive Medien und interaktive Erlebnisse, wo ich erkundet habe, wie Rhythmus, Bewegung und Interaktion die Wahrnehmung digitaler Welten prägen.",
     p3:
-      "Zuvor arbeitete ich von 2019 bis 2024 in der Spielebranche und spezialisierte mich über fünf Jahre hinweg auf Marketing-Assets, 3D-Character-Art und Environment Design. Durch die Verbindung meines Hintergrunds mit einem Masterabschluss in 3D-Animation konnte ich meine Produktionsmethoden verfeinern und meine Arbeitsweise mit digitalen Tools erweitern. Nachdem ich Erfahrungen mit VR-Systemen, Game Development und Simulationen gesammelt hatte, begann ich mich stärker darauf zu konzentrieren, wie Rhythmus, Bewegung und Interaktion digitale Erfahrungen formen, und verlagerte meinen Fokus von statischen Ergebnissen hin zu sich entwickelnden Systemen.",
-    p4:
-      "In letzter Zeit liegt mein Fokus stärker auf codebasierten Medien wie audioreaktiven Visuals, immersiven Interaktionen und der Gestaltung von Erlebnissen, die sich lebendig anfühlen. Ich bin noch immer am Erkunden, Experimentieren und mache weiterhin Fehler.",
+      "Heute interessiere ich mich besonders für kreative Technologien, audio-reactive Visuals und generative Systeme, die die Grenzen zwischen Design, Motion und Code verschwimmen lassen. Ich experimentiere gerne, lerne neue Tools und entwickle Erfahrungen, die sich lebendig anfühlen. Aktuell liegt mein Fokus auf audio-reactiven Visuals, generativem Design und Echtzeit-Visualumgebungen.",
   },
   contact: {
     headline:
@@ -408,13 +403,11 @@ const tr: TranslationMessages = {
   },
   about: {
     lead:
-      "Merhaba, ben Ceren. 3D, motion ve etkileşim alanlarında çalışan multidisipliner bir tasarımcıyım. Meraklıyım, öğrenmeyi seviyorum ve bir şeyleri olduğu gibi bırakmak yerine sürekli geliştirmeye çalışıyorum.",
+      "Hi, ben Ceren, 3D, motion ve interaktif tasarım alanlarında çalışan multidisipliner bir tasarımcıyım. Meraklıyım, öğrenmeyi severim ve yaptığım işleri olduğu gibi bırakmak yerine sürekli geliştirmeye ve iyileştirmeye çalışırım.",
     p2:
-      "Her şey grafik tasarım lisansıyla başladı. Tasarımların sabit kalması gerekiyordu ama bu çok uzun sürmedi. Hareket ve etkileşime her zaman ilgim vardı, bu yüzden zamanla işlerim insanı içine çeken immersif deneyimlere dönüştü.",
+      "Yolculuğum grafik tasarımla başladı; tasarımlarımın aslında statik kalması gerekliydi. Ama bu uzun sürmedi. Kısa sürede tasarımlarım hareket etmeye, tepki vermeye ve etkileşime davet etmeye başladı. Bu nedenle kariyerim beni oyun geliştirme, animasyon, immersive medya ve interaktif deneyimlere yönlendirdi. Bu alanlarda ritim, hareket ve etkileşimin insanların dijital dünyaları algılama biçimini nasıl şekillendirdiğini keşfettim.",
     p3:
-      "Daha önce, 2019–2024 yılları arasında oyun sektöründe çalıştım ve beş yıl boyunca pazarlama materyalleri, 3D karakter tasarımı ve çevre tasarımı alanlarında uzmanlaştım. Deneyimlerimi 3D animasyon alanındaki yüksek lisansımla birleştirerek üretim yöntemlerimi geliştirme ve araçlarla çalışma biçimimi genişletme fırsatı buldum. VR sistemleri, oyun geliştirme ve simülasyonlar üzerine deneyim kazandıktan sonra günümüzde ritim, hareket ve etkileşimin dijital deneyimleri nasıl şekillendirdiğine daha fazla odaklanmaya başladım ve statik çıktılardan evrilen sistemlere yöneldim.",
-    p4:
-      "Son zamanlarda odağım, sesle tepki veren görseller, etkileşimli deneyimler ve canlı hissettiren deneyimler gibi daha çok kod tabanlı üretimlere yöneldi. Hâlâ keşfediyorum, hâlâ deniyorum ve hatalar yapıyorum.",
+      "Bugün özellikle creative technologies, audio-reactive görseller ve tasarım, motion ve code arasındaki sınırları bulanıklaştıran generatif sistemlerle ilgileniyorum. Deney yapmayı, yeni araçlar öğrenmeyi ve canlı hissettiren deneyimler üretmeyi seviyorum. Şu anda odak noktam audio-reactive görseller, generatif tasarım ve real-time görsel ortamlar.",
   },
   contact: {
     headline:

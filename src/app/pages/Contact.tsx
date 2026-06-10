@@ -2,53 +2,58 @@ import { useCallback, useState } from "react";
 import { motion } from "motion/react";
 import { useLanguage } from "../context/LanguageContext";
 import {
-  ARTSTATION_PROFILE_URL,
-  BEHANCE_PROFILE_URL,
   CONTACT_EMAIL,
+  CONTACT_SOCIAL_LINKS,
+  type ContactSocialLinkId,
   FORMSPREE_ENDPOINT,
 } from "../config/contact";
 import { cn } from "../components/ui/utils";
 import artstationIconUrl from "../assets/artstation.png?url";
 import behanceIconUrl from "../assets/behance.png?url";
 
+const SOCIAL_ICONS: Record<ContactSocialLinkId, string> = {
+  artstation: artstationIconUrl,
+  behance: behanceIconUrl,
+};
+
 const fieldClass =
   "mt-1.5 w-full rounded-lg border border-border bg-input-background px-3 py-2.5 text-sm text-foreground outline-none transition-[box-shadow,border-color] placeholder:text-muted-foreground focus:border-ring focus:ring-2 focus:ring-ring/25";
 
 const labelClass = "block text-[0.8rem] font-medium text-foreground/85";
 
-/** Mailto + social icon links — shared height and primary colors. */
-const contactCtaShellClass =
-  "inline-flex shrink-0 cursor-pointer items-center justify-center rounded-md bg-primary py-1 text-primary-foreground transition-[background-color,border-color,color,opacity] duration-200 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.98]";
+const emailCtaBaseClass =
+  "inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full px-5 py-2 text-xs font-medium tracking-wide transition-[background-color,border-color,color,opacity] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.98]";
 
-/** Mailto CTA — primary slab. */
 const emailMailtoPrimaryClass = cn(
-  contactCtaShellClass,
-  "min-w-[8.5rem] px-2 text-xs font-medium tracking-wide",
+  emailCtaBaseClass,
+  "min-w-[8.5rem] bg-primary text-primary-foreground hover:opacity-90",
 );
 
-/** Mailto tıklanınca Copy “Copied!” ile aynı görünüm (metin değişmez). */
-const emailMailtoAckClass =
-  "inline-flex min-w-[8.5rem] shrink-0 cursor-pointer items-center justify-center rounded-md border border-border bg-muted/50 px-2 py-1 text-xs font-medium tracking-wide text-foreground transition-[background-color,border-color,color] duration-200 hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.98]";
+const emailMailtoAckClass = cn(
+  emailCtaBaseClass,
+  "min-w-[8.5rem] border border-border bg-muted/50 text-foreground hover:bg-muted",
+);
 
-/** Copy / Copied: same fixed width in both states (fits EN/DE/TR feedback text). */
-const emailCopyPrimaryClass =
-  "inline-flex w-[8rem] shrink-0 items-center justify-center rounded-md bg-primary px-2 py-1 text-xs font-medium tracking-wide text-primary-foreground transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+const emailCopyPrimaryClass = cn(
+  emailCtaBaseClass,
+  "w-[8rem] bg-primary text-primary-foreground hover:opacity-90",
+);
 
-const emailCopyChipClass =
-  "inline-flex w-[8rem] shrink-0 items-center justify-center rounded-md border border-border bg-muted/50 px-2 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+const emailCopyChipClass = cn(
+  emailCtaBaseClass,
+  "w-[8rem] border border-border bg-muted/50 text-foreground hover:bg-muted",
+);
 
-/** Pre-colored logo PNGs — no tint/background overlay. */
-const contactSocialIconLinkClass =
-  "inline-flex shrink-0 rounded-md transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background";
-
-function ContactSocialIconLink({
+function ContactSocialRow({
   href,
   ariaLabel,
   iconUrl,
+  label,
 }: {
   href: string;
   ariaLabel: string;
   iconUrl: string;
+  label: string;
 }) {
   return (
     <a
@@ -56,16 +61,19 @@ function ContactSocialIconLink({
       target="_blank"
       rel="noopener noreferrer"
       aria-label={ariaLabel}
-      className={contactSocialIconLinkClass}
+      className="group inline-flex w-fit max-w-full items-center gap-3 rounded-md transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
       <img
         src={iconUrl}
         alt=""
         width={28}
         height={28}
-        className="h-7 w-7 object-contain"
+        className="h-7 w-7 shrink-0 object-contain"
         decoding="async"
       />
+      <span className="text-sm text-muted-foreground transition-colors group-hover:text-foreground">
+        {label}
+      </span>
     </a>
   );
 }
@@ -101,14 +109,12 @@ export function Contact() {
     >
       <div className="space-y-8 leading-relaxed text-muted-foreground">
         <div className="space-y-6">
-          <div className="space-y-5">
-            <p className="whitespace-pre-line text-base font-normal italic leading-relaxed text-muted-foreground">
-              {c.headline}
-            </p>
-            {c.description.trim() ? (
-              <p className="text-base text-muted-foreground">{c.description}</p>
-            ) : null}
-          </div>
+          <p className="whitespace-pre-line text-base font-normal italic leading-relaxed text-muted-foreground">
+            {c.headline}
+          </p>
+          {c.description.trim() ? (
+            <p className="text-base text-muted-foreground">{c.description}</p>
+          ) : null}
         </div>
 
         {!FORMSPREE_ENDPOINT && c.noFormNote.trim() ? (
@@ -116,49 +122,46 @@ export function Contact() {
         ) : null}
 
         <div className="border-t border-border pt-8">
-          <div className="flex flex-col items-start gap-3">
+          <div className="flex flex-col items-start gap-8">
             {c.rolesLine.trim() ? (
-              <p className="mb-6 max-w-md text-[0.8rem] leading-snug text-muted-foreground">
+              <p className="max-w-md text-[0.8rem] leading-snug text-muted-foreground">
                 {c.rolesLine}
               </p>
             ) : null}
-            <div className="flex max-w-full flex-wrap items-baseline gap-x-2 gap-y-2.5 text-sm leading-relaxed text-foreground">
-              <span className="inline-flex items-baseline gap-2">
-                <a
-                  href={mailtoHref}
-                  className={emailMeAck ? emailMailtoAckClass : emailMailtoPrimaryClass}
-                  onClick={onMailtoClick}
-                >
-                  {c.emailCta}
-                </a>
-                <span className="ml-1 text-muted-foreground">{c.emailInlineOr}</span>
-              </span>
-              <span className="inline-flex min-w-0 max-w-full items-baseline gap-2">
-                <button
-                  type="button"
-                  onClick={copyEmailToClipboard}
-                  className={cn(
-                    emailCopied ? emailCopyChipClass : emailCopyPrimaryClass,
-                    emailCopied ? "cursor-default" : "cursor-pointer",
-                  )}
-                >
-                  {emailCopied ? c.emailCopiedFeedback : c.copyEmail}
-                </button>
-              </span>
+
+            <div className="flex max-w-full flex-wrap items-center gap-x-2 gap-y-2.5 text-sm text-foreground">
+              <a
+                href={mailtoHref}
+                className={emailMeAck ? emailMailtoAckClass : emailMailtoPrimaryClass}
+                onClick={onMailtoClick}
+              >
+                {c.emailCta}
+              </a>
+              <span className="text-muted-foreground">{c.emailInlineOr}</span>
+              <button
+                type="button"
+                onClick={copyEmailToClipboard}
+                className={cn(
+                  emailCopied ? emailCopyChipClass : emailCopyPrimaryClass,
+                  emailCopied ? "cursor-default" : "cursor-pointer",
+                )}
+              >
+                {emailCopied ? c.emailCopiedFeedback : c.copyEmail}
+              </button>
             </div>
-            {/* Two lines under the CTA row */}
-            <div className="mt-5 flex items-center gap-3.5">
-              <ContactSocialIconLink
-                href={ARTSTATION_PROFILE_URL}
-                ariaLabel={c.artStationProfileAriaLabel}
-                iconUrl={artstationIconUrl}
-              />
-              <ContactSocialIconLink
-                href={BEHANCE_PROFILE_URL}
-                ariaLabel={c.behanceProfileAriaLabel}
-                iconUrl={behanceIconUrl}
-              />
-            </div>
+
+            <ul className="flex flex-col items-start gap-4">
+              {CONTACT_SOCIAL_LINKS.map((link) => (
+                <li key={link.id}>
+                  <ContactSocialRow
+                    href={link.href}
+                    iconUrl={SOCIAL_ICONS[link.id]}
+                    label={link.label}
+                    ariaLabel={c[link.ariaLabelKey]}
+                  />
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
 

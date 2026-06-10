@@ -14,3 +14,28 @@ export const FORMSPREE_ENDPOINT = (
 
 export const ARTSTATION_PROFILE_URL = "https://www.artstation.com/yesimceren";
 export const BEHANCE_PROFILE_URL = "https://www.behance.net/yesimceren";
+
+/** Visible label + aria key live in i18n; add Patreon/Gumroad here when ready. */
+export type ContactSocialLinkId = "artstation" | "behance";
+
+export type ContactSocialLinkDef = {
+  readonly id: ContactSocialLinkId;
+  readonly href: string;
+  readonly label: string;
+  readonly ariaLabelKey: "artStationProfileAriaLabel" | "behanceProfileAriaLabel";
+};
+
+export const CONTACT_SOCIAL_LINKS: readonly ContactSocialLinkDef[] = [
+  {
+    id: "artstation",
+    href: ARTSTATION_PROFILE_URL,
+    label: "ArtStation",
+    ariaLabelKey: "artStationProfileAriaLabel",
+  },
+  {
+    id: "behance",
+    href: BEHANCE_PROFILE_URL,
+    label: "Behance",
+    ariaLabelKey: "behanceProfileAriaLabel",
+  },
+];
