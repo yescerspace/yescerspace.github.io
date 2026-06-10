@@ -14,16 +14,26 @@ export const FORMSPREE_ENDPOINT = (
 
 export const ARTSTATION_PROFILE_URL = "https://www.artstation.com/yesimceren";
 export const BEHANCE_PROFILE_URL = "https://www.behance.net/yesimceren";
+export const INSTAGRAM_PROFILE_URL = "https://www.instagram.com/cerryhub/";
+export const GUMROAD_PROFILE_URL = "https://cerryhub.gumroad.com/";
 
-/** Visible label + aria key live in i18n; add Patreon/Gumroad here when ready. */
-export type ContactSocialLinkId = "artstation" | "behance";
+export type ContactSocialLinkId =
+  | "artstation"
+  | "behance"
+  | "instagram"
+  | "gumroad";
+
+export type ContactSocialAriaLabelKey =
+  | "artStationProfileAriaLabel"
+  | "behanceProfileAriaLabel"
+  | "instagramProfileAriaLabel"
+  | "gumroadProfileAriaLabel";
 
 export type ContactSocialLinkDef = {
   readonly id: ContactSocialLinkId;
   readonly href: string;
   readonly label: string;
-  readonly ariaLabelKey: "artStationProfileAriaLabel" | "behanceProfileAriaLabel";
-  /** Bundled in Contact.tsx — kept here for future Patreon/Gumroad rows. */
+  readonly ariaLabelKey: ContactSocialAriaLabelKey;
   readonly iconKey: ContactSocialLinkId;
 };
 
@@ -41,5 +51,19 @@ export const CONTACT_SOCIAL_LINKS: readonly ContactSocialLinkDef[] = [
     label: "Behance",
     ariaLabelKey: "behanceProfileAriaLabel",
     iconKey: "behance",
+  },
+  {
+    id: "instagram",
+    href: INSTAGRAM_PROFILE_URL,
+    label: "instagram",
+    ariaLabelKey: "instagramProfileAriaLabel",
+    iconKey: "instagram",
+  },
+  {
+    id: "gumroad",
+    href: GUMROAD_PROFILE_URL,
+    label: "Gumroad",
+    ariaLabelKey: "gumroadProfileAriaLabel",
+    iconKey: "gumroad",
   },
 ];

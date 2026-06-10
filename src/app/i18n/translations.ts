@@ -130,6 +130,8 @@ export type TranslationMessages = {
     emailCopiedFeedback: string;
     artStationProfileAriaLabel: string;
     behanceProfileAriaLabel: string;
+    instagramProfileAriaLabel: string;
+    gumroadProfileAriaLabel: string;
     rolesLine: string;
     nameLabel: string;
     emailLabel: string;
@@ -253,6 +255,8 @@ const en: TranslationMessages = {
     emailCopiedFeedback: "Copied!",
     artStationProfileAriaLabel: "ArtStation profile (opens in new tab)",
     behanceProfileAriaLabel: "Behance profile (opens in new tab)",
+    instagramProfileAriaLabel: "Instagram profile (opens in new tab)",
+    gumroadProfileAriaLabel: "Gumroad shop (opens in new tab)",
     rolesLine: "",
     nameLabel: "Name",
     emailLabel: "Email",
@@ -336,6 +340,8 @@ const de: TranslationMessages = {
     emailCopiedFeedback: "Kopiert!",
     artStationProfileAriaLabel: "ArtStation-Profil (öffnet in neuem Tab)",
     behanceProfileAriaLabel: "Behance-Profil (öffnet in neuem Tab)",
+    instagramProfileAriaLabel: "Instagram-Profil (öffnet in neuem Tab)",
+    gumroadProfileAriaLabel: "Gumroad-Shop (öffnet in neuem Tab)",
     rolesLine: "",
     nameLabel: "Name",
     emailLabel: "E-Mail",
@@ -419,6 +425,8 @@ const tr: TranslationMessages = {
     emailCopiedFeedback: "Kopyalandı!",
     artStationProfileAriaLabel: "ArtStation profili (yeni sekmede açılır)",
     behanceProfileAriaLabel: "Behance profili (yeni sekmede açılır)",
+    instagramProfileAriaLabel: "Instagram profili (yeni sekmede açılır)",
+    gumroadProfileAriaLabel: "Gumroad mağazası (yeni sekmede açılır)",
     rolesLine: "",
     nameLabel: "Ad",
     emailLabel: "E-posta",

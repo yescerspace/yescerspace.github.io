@@ -10,10 +10,14 @@ import {
 import { cn } from "../components/ui/utils";
 import artstationIconUrl from "../assets/artstation.png?url";
 import behanceIconUrl from "../assets/behance.png?url";
+import instagramIconUrl from "../assets/instagram.png?url";
+import gumroadIconUrl from "../assets/gumroad.png?url";
 
 const SOCIAL_ICONS: Record<ContactSocialLinkId, string> = {
   artstation: artstationIconUrl,
   behance: behanceIconUrl,
+  instagram: instagramIconUrl,
+  gumroad: gumroadIconUrl,
 };
 
 const fieldClass =
@@ -123,9 +127,9 @@ export function Contact() {
         ) : null}
 
         <div className="border-t border-border pt-8">
-          <div className="flex flex-col items-start gap-8">
+          <div className="flex flex-col items-start">
             {c.rolesLine.trim() ? (
-              <p className="max-w-md text-[0.8rem] leading-snug text-muted-foreground">
+              <p className="mb-6 max-w-md text-[0.8rem] leading-snug text-muted-foreground">
                 {c.rolesLine}
               </p>
             ) : null}
@@ -151,7 +155,7 @@ export function Contact() {
               </button>
             </div>
 
-            <ul className="mt-1 flex flex-col items-start gap-4">
+            <ul className="mt-8 flex flex-col items-start gap-4 sm:mt-10">
               {CONTACT_SOCIAL_LINKS.map((link) => (
                 <li key={link.id}>
                   <ContactSocialRow
