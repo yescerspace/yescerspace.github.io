@@ -61,15 +61,16 @@ function ContactSocialRow({
       target="_blank"
       rel="noopener noreferrer"
       aria-label={ariaLabel}
-      className="group inline-flex w-fit max-w-full items-center gap-3 rounded-md transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      className="group inline-flex w-fit max-w-full items-center gap-3.5 rounded-md transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
       <img
         src={iconUrl}
         alt=""
-        width={28}
-        height={28}
-        className="h-7 w-7 shrink-0 object-contain"
+        width={32}
+        height={32}
+        className="h-8 w-8 shrink-0 rounded-md object-contain"
         decoding="async"
+        loading="eager"
       />
       <span className="text-sm text-muted-foreground transition-colors group-hover:text-foreground">
         {label}
@@ -150,12 +151,12 @@ export function Contact() {
               </button>
             </div>
 
-            <ul className="flex flex-col items-start gap-4">
+            <ul className="mt-1 flex flex-col items-start gap-4">
               {CONTACT_SOCIAL_LINKS.map((link) => (
                 <li key={link.id}>
                   <ContactSocialRow
                     href={link.href}
-                    iconUrl={SOCIAL_ICONS[link.id]}
+                    iconUrl={SOCIAL_ICONS[link.iconKey]}
                     label={link.label}
                     ariaLabel={c[link.ariaLabelKey]}
                   />

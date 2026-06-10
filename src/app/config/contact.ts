@@ -23,6 +23,8 @@ export type ContactSocialLinkDef = {
   readonly href: string;
   readonly label: string;
   readonly ariaLabelKey: "artStationProfileAriaLabel" | "behanceProfileAriaLabel";
+  /** Bundled in Contact.tsx — kept here for future Patreon/Gumroad rows. */
+  readonly iconKey: ContactSocialLinkId;
 };
 
 export const CONTACT_SOCIAL_LINKS: readonly ContactSocialLinkDef[] = [
@@ -31,11 +33,13 @@ export const CONTACT_SOCIAL_LINKS: readonly ContactSocialLinkDef[] = [
     href: ARTSTATION_PROFILE_URL,
     label: "ArtStation",
     ariaLabelKey: "artStationProfileAriaLabel",
+    iconKey: "artstation",
   },
   {
     id: "behance",
     href: BEHANCE_PROFILE_URL,
     label: "Behance",
     ariaLabelKey: "behanceProfileAriaLabel",
+    iconKey: "behance",
   },
 ];
