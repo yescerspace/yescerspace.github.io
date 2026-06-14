@@ -21,26 +21,37 @@ export type HandOverlaySnapshot = {
 export type PhysicalHandState = ClassifiedHand;
 
 /**
- * free — el yok veya 5 parmak açık değil
- * steer — iki el 5 parmak açık: el arası mesafe (azimuth), sağ Y (polar)
- * detail — proje sayfası: sağ el Y kaydır, sol yumruk kapat
+ * free — bekleniyor
+ * pointer — ☝️ gezegen imleci
+ * rotate — 👋 avuç yatay kaydırma
+ * detail — proje detayı
  */
-export type HandControlMode = "free" | "steer" | "detail";
+export type HandControlMode = "free" | "pointer" | "rotate" | "detail";
 
 export type GalleryHandSample = {
   handDetected: boolean;
   mode: HandControlMode;
   userLeft: PhysicalHandState;
   userRight: PhysicalHandState;
-  /** İki avuç arası mesafe (0–1 normalize); daralınca sağa, açılınca sola döner */
-  handsSpan: number;
-  /** Sol yumruk kenarı → detayı kapat */
+  /** ☝️ imleç konumu (0–1, galeri alanı) */
+  pointerX: number;
+  pointerY: number;
+  pointerActive: boolean;
+  /** 👌 seçim kenarı */
+  selectPulse: boolean;
+  /** 🫳 detay kapat */
   closePulse: boolean;
-  /** 🙏 — uzaklaştır + merkez */
-  zoomOutPulse: boolean;
-  /** Teslim ol — açılış boyutuna dön */
+  /** 🖐️ yukarı açık avuç — başlangıç kadrajı */
   resetZoomPulse: boolean;
-  /** Zoom animasyonu sırasında orbit el kontrolü kilitli */
+  /** 🖐️ açık avuç — zoom out */
+  zoomOutPulse: boolean;
+  openPalmHeld: boolean;
+  /** ✊ yumruk — zoom in */
+  zoomInPulse: boolean;
+  fistHeld: boolean;
+  /** 👋 Avuç yatay kaydırma → azimuth hızı (selfie, ayna X). */
+  rotateVelocity: number;
+  waveActive: boolean;
   orbitLocked: boolean;
   overlayHands: HandOverlaySnapshot[];
 };
@@ -48,12 +59,13 @@ export type GalleryHandSample = {
 const EMPTY_HAND: PhysicalHandState = {
   detected: false,
   gesture: "none",
-  pinchX: 0.5,
-  pinchY: 0.5,
+  pointerX: 0.5,
+  pointerY: 0.5,
   palmX: 0.5,
   palmY: 0.5,
   indexY: 0.5,
-  pinchProximity: 0,
+  wristX: 0.5,
+  wristY: 0.5,
 };
 
 const EMPTY_SAMPLE: GalleryHandSample = {
@@ -61,17 +73,29 @@ const EMPTY_SAMPLE: GalleryHandSample = {
   mode: "free",
   userLeft: { ...EMPTY_HAND },
   userRight: { ...EMPTY_HAND },
-  handsSpan: 0,
+  pointerX: 0.5,
+  pointerY: 0.5,
+  pointerActive: false,
+  selectPulse: false,
   closePulse: false,
-  zoomOutPulse: false,
   resetZoomPulse: false,
+  zoomOutPulse: false,
+  openPalmHeld: false,
+  zoomInPulse: false,
+  fistHeld: false,
+  rotateVelocity: 0,
+  waveActive: false,
   orbitLocked: false,
   overlayHands: [],
 };
 
 export type GalleryHandControlContextValue = {
+  hintOpen: boolean;
+  setHintOpen: (open: boolean) => void;
   enabled: boolean;
   setEnabled: (on: boolean) => void;
+  detailModalOpen: boolean;
+  setDetailModalOpen: (open: boolean) => void;
   activeMode: HandControlMode;
   setActiveMode: (mode: HandControlMode) => void;
   trackingReady: boolean;
@@ -92,7 +116,9 @@ export function GalleryHandControlProvider({
   children: ReactNode;
   defaultEnabled?: boolean;
 }) {
+  const [hintOpen, setHintOpen] = useState(false);
   const [enabled, setEnabled] = useState(defaultEnabled);
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
   const [activeMode, setActiveMode] = useState<HandControlMode>("free");
   const [trackingReady, setTrackingReady] = useState(false);
   const [trackingError, setTrackingError] = useState<string | null>(null);
@@ -101,8 +127,12 @@ export function GalleryHandControlProvider({
 
   const value = useMemo(
     (): GalleryHandControlContextValue => ({
+      hintOpen,
+      setHintOpen,
       enabled,
       setEnabled,
+      detailModalOpen,
+      setDetailModalOpen,
       activeMode,
       setActiveMode,
       trackingReady,
@@ -112,7 +142,7 @@ export function GalleryHandControlProvider({
       sampleRef,
       videoRef,
     }),
-    [enabled, activeMode, trackingReady, trackingError],
+    [hintOpen, enabled, detailModalOpen, activeMode, trackingReady, trackingError],
   );
 
   return (
@@ -126,57 +156,11 @@ export function useGalleryHandControl(): GalleryHandControlContextValue | null {
   return useContext(GalleryHandControlContext);
 }
 
-/** Avuçlar birleşince hedef azimuth ofseti (yarım tur) */
-export const HAND_STEER_AZIMUTH_MAX_RAD = Math.PI;
-/** Eller bitişik sayılır — yatay avuç aralığı */
-export const HAND_STEER_SPAN_CLOSE_X = 0.08;
-/** Steer nötründen ekstra açılım → ters yönde −π */
-export const HAND_STEER_SPAN_WIDE_EXTRA = 0.22;
-
-/** Steer azimuth: yalnızca yatay avuç mesafesi (X); Y kaldırma polar ile karışmaz */
-export function steerHandsSpanX(
-  left: PhysicalHandState,
-  right: PhysicalHandState,
-): number {
-  if (!left.detected || !right.detected) return 0;
-  return Math.abs(right.palmX - left.palmX);
-}
-
-/** Nötr spanX'e göre kapanma/açılma → −π…+π ofset (radyan) */
-export function steerAzimuthOffsetFromSpan(
-  spanX: number,
-  neutralSpanX: number,
-): number {
-  const closeDelta = neutralSpanX - spanX;
-  const wideDelta = spanX - neutralSpanX;
-  let offset = 0;
-
-  if (closeDelta > 0) {
-    const range = Math.max(neutralSpanX - HAND_STEER_SPAN_CLOSE_X, 0.12);
-    offset += (closeDelta / range) * HAND_STEER_AZIMUTH_MAX_RAD;
-  }
-  if (wideDelta > 0) {
-    offset -= (wideDelta / HAND_STEER_SPAN_WIDE_EXTRA) * HAND_STEER_AZIMUTH_MAX_RAD;
-  }
-
-  return Math.min(
-    HAND_STEER_AZIMUTH_MAX_RAD,
-    Math.max(-HAND_STEER_AZIMUTH_MAX_RAD, offset),
-  );
-}
-
-/** Sağ el dikey → polar ofset katsayısı */
-export const HAND_STEER_POLAR_PALM_GAIN = 2.1;
-/** Polar hedefe yaklaşma (düşük = daha yumuşak / yavaş) */
-export const HAND_STEER_POLAR_SMOOTH = 0.06;
-/** Azimuth hedefe yaklaşma */
-export const HAND_STEER_AZIMUTH_SMOOTH = 0.06;
-/** Proje detay — sağ el dikey → scroll (galeri polar ile aynı mantık) */
-export const HAND_DETAIL_SCROLL_PALM_GAIN = 2200;
-export const HAND_DETAIL_SCROLL_SMOOTH = 0.07;
+/** 👋 dönüş yumuşatma */
+export const HAND_ROTATE_SMOOTH = 0.14;
 /** Orbit zoom animasyonu yumuşatma */
 export const HAND_ZOOM_ANIM_SMOOTH = 0.045;
-export const HAND_GESTURE_PULSE_COOLDOWN_MS = 1100;
+export const HAND_GESTURE_PULSE_COOLDOWN_MS = 900;
 
 export function resetGalleryHandSample(
   ref: MutableRefObject<GalleryHandSample>,
@@ -191,6 +175,8 @@ export function resetGalleryHandSample(
 export function resetGalleryHandControlState(
   hand: GalleryHandControlContextValue,
 ): void {
+  hand.setHintOpen(false);
+  hand.setEnabled(false);
   hand.setActiveMode("free");
   hand.setTrackingReady(false);
   hand.setTrackingError(null);

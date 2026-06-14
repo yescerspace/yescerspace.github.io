@@ -71,10 +71,10 @@ import {
   SUN_RAYS_PLANE_SIDE_MULT,
 } from "./gallerySunRaysMaterial";
 import { GalleryMouseParticles } from "./GalleryMouseParticles";
-import { GalleryHandOrbitBridge } from "./GalleryHandOrbitBridge";
+import { GalleryHandRotateBridge } from "./GalleryHandRotateBridge";
+import { GalleryHandPointerBridge } from "./GalleryHandPointerBridge";
 import { GalleryHandZoomBridge } from "./GalleryHandZoomBridge";
 import { GalleryOrbitWheelSmooth } from "./GalleryOrbitWheelSmooth";
-import { HandControlOverlay } from "./HandControlOverlay";
 import { GalleryHandModalEffect } from "./GalleryHandModalEffect";
 import { useGalleryHandControl } from "./galleryHandControl";
 import {
@@ -181,12 +181,17 @@ function tryPlayDetailVideo(
   }
   const attempt = () => {
     if (!v.isConnected || shouldBlockPlay?.()) return;
-    v.muted = false;
-    void v.play().catch(() => {
-      if (!v.isConnected || shouldBlockPlay?.()) return;
-      v.muted = true;
-      void v.play().catch(() => {});
-    });
+    v.muted = true;
+    void v.play()
+      .then(() => {
+        if (!v.isConnected || shouldBlockPlay?.()) return;
+        v.muted = false;
+        v.volume = DETAIL_VIDEO_VOLUME;
+      })
+      .catch(() => {
+        if (!v.isConnected || shouldBlockPlay?.()) return;
+        void v.play().catch(() => {});
+      });
   };
   attempt();
   if (v.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) return;
@@ -203,76 +208,51 @@ function tryPlayDetailVideo(
   );
 }
 
-function detailReadingModeActive(readingEl: HTMLElement | null): boolean {
-  if (!readingEl || typeof window === "undefined") return false;
-  const r = readingEl.getBoundingClientRect();
-  return r.top < window.innerHeight * 0.78;
+function detailVideoVisibility(r: DOMRect, viewH: number): number {
+  return Math.max(0, Math.min(r.bottom, viewH) - Math.max(r.top, 0));
 }
 
-function detailPlayableVideoIndices(
-  detailUrls: readonly string[],
-  srcFor: (u: string) => string,
-  failed: Record<string, boolean>,
-): number[] {
-  const indices: number[] = [];
-  for (let i = 0; i < detailUrls.length; i++) {
-    const u = detailUrls[i];
-    if (u && !failed[u] && isVideoUrl(srcFor(u))) indices.push(i);
-  }
-  return indices;
-}
+/** Klip ekranda yeterince görünüyorsa oynat; kaydırıp geçince dur. */
+const DETAIL_VIDEO_MIN_VISIBLE_PX = 72;
 
 function pickDetailVideoPlayIndex(
   detailUrls: readonly string[],
   srcFor: (u: string) => string,
   failed: Record<string, boolean>,
   itemEls: readonly (HTMLElement | null)[],
-  forcedPlayIndex: number | null,
-  readingEl: HTMLElement | null = null,
-  userPausedSingleVideo = false,
+  fullscreenIndex: number | null = null,
 ): number {
-  const playableVideos = detailPlayableVideoIndices(detailUrls, srcFor, failed);
-  const soleVideoIndex =
-    playableVideos.length === 1 ? playableVideos[0]! : -1;
+  const viewH = typeof window !== "undefined" ? window.innerHeight : 800;
 
-  /** One clip: keep playing while reading info below unless the viewer paused. */
-  if (soleVideoIndex >= 0) {
-    return userPausedSingleVideo ? -1 : soleVideoIndex;
-  }
-
-  if (detailReadingModeActive(readingEl)) return -1;
-
-  const viewBottom =
-    typeof window !== "undefined" ? window.innerHeight : 800;
-
-  if (forcedPlayIndex != null) {
-    const u = detailUrls[forcedPlayIndex];
+  if (fullscreenIndex != null) {
+    const u = detailUrls[fullscreenIndex];
     if (u && !failed[u] && isVideoUrl(srcFor(u))) {
-      const wrap = itemEls[forcedPlayIndex];
-      if (wrap) {
-        const r = wrap.getBoundingClientRect();
-        const visible = Math.min(r.bottom, viewBottom) - Math.max(r.top, 0);
-        if (visible > 32) return forcedPlayIndex;
+      const wrap = itemEls[fullscreenIndex];
+      if (
+        wrap &&
+        detailVideoVisibility(wrap.getBoundingClientRect(), viewH) >
+          DETAIL_VIDEO_MIN_VISIBLE_PX
+      ) {
+        return fullscreenIndex;
       }
     }
   }
+
   let bestI = -1;
   let bestVisible = 0;
-
   for (let i = 0; i < detailUrls.length; i++) {
     const u = detailUrls[i];
     if (!u || failed[u] || !isVideoUrl(srcFor(u))) continue;
     const wrap = itemEls[i];
     if (!wrap) continue;
-    const r = wrap.getBoundingClientRect();
-    const visible = Math.min(r.bottom, viewBottom) - Math.max(r.top, 0);
+    const visible = detailVideoVisibility(wrap.getBoundingClientRect(), viewH);
     if (visible > bestVisible) {
       bestVisible = visible;
       bestI = i;
     }
   }
 
-  return bestI >= 0 && bestVisible > 32 ? bestI : -1;
+  return bestVisible >= DETAIL_VIDEO_MIN_VISIBLE_PX ? bestI : -1;
 }
 
 function syncDetailVideoPlayback(
@@ -281,19 +261,14 @@ function syncDetailVideoPlayback(
   failed: Record<string, boolean>,
   itemEls: readonly (HTMLElement | null)[],
   videoEls: readonly (HTMLVideoElement | null)[],
-  forcedPlayIndex: number | null = null,
-  readingEl: HTMLElement | null = null,
-  userPausedSingleVideo = false,
-  shouldBlockPlay?: () => boolean,
+  fullscreenIndex: number | null = null,
 ): void {
   const playIndex = pickDetailVideoPlayIndex(
     detailUrls,
     srcFor,
     failed,
     itemEls,
-    forcedPlayIndex,
-    readingEl,
-    userPausedSingleVideo,
+    fullscreenIndex,
   );
 
   for (let i = 0; i < videoEls.length; i++) {
@@ -302,7 +277,7 @@ function syncDetailVideoPlayback(
     const u = detailUrls[i];
     if (!u || failed[u] || !isVideoUrl(srcFor(u))) continue;
     if (i === playIndex) {
-      tryPlayDetailVideo(v, shouldBlockPlay);
+      tryPlayDetailVideo(v);
     } else {
       pauseDetailVideoElement(v);
     }
@@ -1846,6 +1821,7 @@ function GalleryCardMesh({
   onHoverEnd,
   onPick,
   onSoftGalleryHint,
+  disableMousePick = false,
 }: {
   image: GalleryImage;
   slot: number;
@@ -1867,6 +1843,7 @@ function GalleryCardMesh({
   onHoverEnd: () => void;
   onPick: () => void;
   onSoftGalleryHint: () => void;
+  disableMousePick?: boolean;
 }) {
   const zoomFxRef = useContext(ZoomFxContext);
   const orbitPhysicsApiRef = useContext(OrbitDragPhysicsContext);
@@ -2798,7 +2775,7 @@ uniform vec3 uCoverGlow;`,
         userData={{ galleryProjectKey: image.projectKey }}
         onPointerOver={(e: ThreeEvent<PointerEvent>) => {
           e.stopPropagation();
-          if (modalOpen) return;
+          if (modalOpen || disableMousePick) return;
           wakeGalleryHoverAudioFromUserGesture();
           if (!prefersReducedMotion) {
             playGalleryHoverChime();
@@ -2807,10 +2784,12 @@ uniform vec3 uCoverGlow;`,
         }}
         onPointerOut={(e: ThreeEvent<PointerEvent>) => {
           e.stopPropagation();
+          if (disableMousePick) return;
           onHoverEnd();
         }}
         onPointerDown={(e: ThreeEvent<PointerEvent>) => {
           e.stopPropagation();
+          if (disableMousePick) return;
           primeGalleryAudioEngineFromUserGesture();
           onSoftGalleryHint();
           prefetchDetailModalMedia(image.images);
@@ -2818,6 +2797,7 @@ uniform vec3 uCoverGlow;`,
         }}
         onPointerUp={(e: ThreeEvent<PointerEvent>) => {
           e.stopPropagation();
+          if (disableMousePick) return;
           const p = pointerDown.current;
           pointerDown.current = null;
           if (modalOpen || !p) return;
@@ -2832,11 +2812,27 @@ uniform vec3 uCoverGlow;`,
   );
 }
 
-function SceneCursor({ hovered }: { hovered: boolean }) {
+function SceneCursor({
+  hovered,
+  handControlActive,
+}: {
+  hovered: boolean;
+  /** Kamera açıkken canvas’ta pointer (Mickey el) gösterme. */
+  handControlActive?: boolean;
+}) {
   const { gl } = useThree();
   useEffect(() => {
+    if (handControlActive) {
+      gl.domElement.style.cursor = "default";
+      return () => {
+        gl.domElement.style.cursor = "";
+      };
+    }
     gl.domElement.style.cursor = hovered ? "pointer" : "grab";
-  }, [gl, hovered]);
+    return () => {
+      gl.domElement.style.cursor = "";
+    };
+  }, [gl, hovered, handControlActive]);
   return null;
 }
 
@@ -2956,8 +2952,11 @@ function GalleryScene({
 }: GallerySceneProps) {
   const handControl = useGalleryHandControl();
   const handMode = handControl?.activeMode ?? "free";
+  const handCameraOn = Boolean(handControl?.enabled);
+  const handGalleryControl = Boolean(handControl?.enabled && !modalOpen);
   const handBlocksMouse = Boolean(
-    handControl?.enabled && !modalOpen && handMode === "steer",
+    handGalleryControl &&
+      (handMode === "pointer" || handMode === "rotate"),
   );
   const handStopsAutoRotate = Boolean(
     handControl?.enabled && !modalOpen && handMode !== "free",
@@ -3054,7 +3053,10 @@ function GalleryScene({
         maxDistance={maxZoomDistance}
         zoomRef={zoomFxRef}
       />
-      <SceneCursor hovered={hoveredIndex !== null} />
+      <SceneCursor
+        hovered={hoveredIndex !== null}
+        handControlActive={handCameraOn}
+      />
       <ambientLight intensity={0.78} />
       <directionalLight position={[4.5, 8, 6]} intensity={1.02} />
       <directionalLight position={[-3, 2, -2]} intensity={0.32} />
@@ -3086,11 +3088,17 @@ function GalleryScene({
         maxDistance={maxZoomDistance}
         zoomSpeed={0.72}
       />
-      <GalleryHandOrbitBridge
+      <GalleryHandRotateBridge
         orbitControlsRef={orbitControlsRef}
         modalOpen={modalOpen}
-        minPolarAngle={minPolarRad}
-        maxPolarAngle={maxPolarRad}
+      />
+      <GalleryHandPointerBridge
+        modalOpen={modalOpen}
+        images={images}
+        visibleIndices={visibleIndices}
+        hoveredIndex={hoveredIndex}
+        setHoveredIndex={setHoveredIndex}
+        onPick={onPick}
       />
       <GalleryHandZoomBridge
         orbitControlsRef={orbitControlsRef}
@@ -3149,10 +3157,11 @@ function GalleryScene({
                 setHoveredIndex(imageIndex);
               }}
               onHoverEnd={() => {
-    setHoveredIndex(null);
+                setHoveredIndex(null);
               }}
               onPick={() => onPick(image)}
               onSoftGalleryHint={onSoftGalleryHint}
+              disableMousePick={handGalleryControl}
             />
           );
         })}
@@ -3169,16 +3178,13 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
     heroAlt,
     className,
     outerScrollRef,
-    muteWhenReadingRef,
     playbackSyncKey,
   }: {
     urls: string[];
     heroAlt: string;
     className?: string;
-    /** Modal backdrop scroll — sync video play/pause when reading info below. */
+    /** Modal backdrop scroll — video görünürlüğü için dinlenir. */
     outerScrollRef?: MutableRefObject<HTMLDivElement | null>;
-    /** When this block enters view, pause all detail videos (info section). */
-    muteWhenReadingRef?: MutableRefObject<HTMLElement | null>;
     /** Re-bind scroll listeners when modal opens (outer ref is ready). */
     playbackSyncKey?: string;
   },
@@ -3202,8 +3208,7 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
   );
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
-  const forcedPlayIndexRef = useRef<number | null>(null);
-  const userPausedVideoRef = useRef(false);
+  const fullscreenVideoIndexRef = useRef<number | null>(null);
 
   const detailUrlsKey = useMemo(() => detailUrls.join("\0"), [detailUrls]);
   const isSingleVideoDetail = useMemo(() => {
@@ -3248,35 +3253,15 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
   );
 
   const syncPlayback = useCallback(() => {
-    const readingEl = muteWhenReadingRef?.current ?? null;
-    const userPaused = userPausedVideoRef.current;
-    const scrollPick = pickDetailVideoPlayIndex(
-      detailUrls,
-      srcFor,
-      failed,
-      itemRefs.current,
-      null,
-      readingEl,
-      userPaused,
-    );
-    if (
-      forcedPlayIndexRef.current != null &&
-      (scrollPick < 0 || scrollPick !== forcedPlayIndexRef.current)
-    ) {
-      forcedPlayIndexRef.current = null;
-    }
     syncDetailVideoPlayback(
       detailUrls,
       srcFor,
       failed,
       itemRefs.current,
       videoRefs.current,
-      forcedPlayIndexRef.current,
-      readingEl,
-      userPaused,
-      () => userPausedVideoRef.current,
+      fullscreenVideoIndexRef.current,
     );
-  }, [detailUrls, srcFor, failed, muteWhenReadingRef]);
+  }, [detailUrls, srcFor, failed]);
 
   const playbackRafRef = useRef(0);
   const schedulePlaybackSync = useCallback(() => {
@@ -3290,20 +3275,19 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
   useLayoutEffect(() => {
     itemRefs.current.length = detailUrls.length;
     videoRefs.current.length = detailUrls.length;
-    forcedPlayIndexRef.current = null;
-    userPausedVideoRef.current = false;
+    fullscreenVideoIndexRef.current = null;
   }, [detailUrls.length, detailUrlsKey]);
 
   useEffect(() => {
     const onFullscreenChanged = () => {
       const fsEl = document.fullscreenElement;
       if (!fsEl) {
-        forcedPlayIndexRef.current = null;
+        fullscreenVideoIndexRef.current = null;
         schedulePlaybackSync();
         return;
       }
       const idx = videoRefs.current.findIndex((v) => v === fsEl);
-      forcedPlayIndexRef.current = idx >= 0 ? idx : null;
+      fullscreenVideoIndexRef.current = idx >= 0 ? idx : null;
       schedulePlaybackSync();
     };
     document.addEventListener("fullscreenchange", onFullscreenChanged);
@@ -3458,7 +3442,7 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
                   aria-label={label}
                   onLoadedMetadata={() => {
                     markDetailMediaReady(url);
-                    if (!userPausedVideoRef.current) schedulePlaybackSync();
+                    schedulePlaybackSync();
                   }}
                   onLoadedData={(e) => {
                     const v = e.currentTarget;
@@ -3467,25 +3451,15 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
                       v.volume = DETAIL_VIDEO_VOLUME;
                     }
                     markDetailMediaReady(url);
-                    if (!userPausedVideoRef.current) schedulePlaybackSync();
-                  }}
-                  onCanPlay={() => {
-                    if (!userPausedVideoRef.current) schedulePlaybackSync();
-                  }}
-                  onPlay={(e) => {
-                    if (e.nativeEvent.isTrusted) {
-                      userPausedVideoRef.current = false;
-                      forcedPlayIndexRef.current = i;
-                    }
                     schedulePlaybackSync();
                   }}
-                  onPause={(e) => {
-                    if (e.nativeEvent.isTrusted) {
-                      userPausedVideoRef.current = true;
-                      forcedPlayIndexRef.current = null;
-                    } else if (forcedPlayIndexRef.current === i) {
-                      forcedPlayIndexRef.current = null;
-                    }
+                  onCanPlay={() => {
+                    schedulePlaybackSync();
+                  }}
+                  onPlay={() => {
+                    schedulePlaybackSync();
+                  }}
+                  onPause={() => {
                     schedulePlaybackSync();
                   }}
                   onError={() => {
@@ -3621,6 +3595,8 @@ export function Gallery3D({
 
   const handlePick = useCallback(
     (image: GalleryImage) => {
+      prefetchDetailModalMedia(image.images);
+      setSelectedImage(image);
       navigate(
         {
           pathname: galleryProjectPath(image.projectKey),
@@ -3701,7 +3677,31 @@ export function Gallery3D({
     [],
   );
 
+  const handControl = useGalleryHandControl();
   const detailModalOpen = selectedImage !== null;
+  const handCameraOn = Boolean(handControl?.enabled);
+
+  useEffect(() => {
+    handControl?.setDetailModalOpen(detailModalOpen);
+  }, [detailModalOpen, handControl]);
+
+  useEffect(() => {
+    if (!handControl?.enabled || detailModalOpen) return;
+    let raf = 0;
+    const tick = () => {
+      const s = handControl.sampleRef.current;
+      const el = galleryShellRef.current;
+      if (s.pointerActive && el) {
+        setPointer({
+          x: s.pointerX * el.clientWidth,
+          y: s.pointerY * el.clientHeight,
+        });
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [handControl, detailModalOpen]);
 
   useEffect(() => {
     if (!detailModalOpen) setShareCopied(false);
@@ -3801,20 +3801,22 @@ export function Gallery3D({
 
   return (
     <div className="flex min-h-0 min-w-0 w-full flex-1 flex-col">
-      <HandControlOverlay modalOpen={detailModalOpen} />
       <GalleryHandModalEffect
         modalOpen={detailModalOpen}
-        scrollRef={detailModalScrollRef}
         onCloseModal={closeModal}
       />
       <div className="flex min-h-0 w-full flex-1 flex-col px-0 pb-0 pt-0">
         <div
           ref={galleryShellRef}
-          className="relative min-h-[220px] w-full min-w-0 flex-1 basis-0 select-none bg-background sm:min-h-[240px]"
+          className={cn(
+            "relative min-h-[220px] w-full min-w-0 flex-1 basis-0 select-none bg-background sm:min-h-[240px]",
+            handCameraOn && "cursor-default",
+          )}
           style={{
             touchAction: "none",
             backgroundImage: "var(--app-shell-gradient)",
             backgroundAttachment: "fixed",
+            cursor: handCameraOn ? "default" : undefined,
           }}
           onPointerMove={(e) => {
             const el = galleryShellRef.current;
@@ -3933,7 +3935,6 @@ export function Gallery3D({
                 <ProjectImageScroll
                   ref={detailModalScrollRef}
                   outerScrollRef={modalDetailWheelRootRef}
-                  muteWhenReadingRef={detailInfoRef}
                   playbackSyncKey={selectedImage.projectKey}
                   key={`${selectedImage.projectKey}|${selectedImage.images.join("|")}`}
                   urls={selectedImage.images}
@@ -3949,7 +3950,6 @@ export function Gallery3D({
               </div>
 
               <motion.div
-                ref={detailInfoRef}
                 initial={{ x: 24, opacity: 0 }}
                 animate={{ x: 0, opacity: 1 }}
                 transition={{
@@ -3957,8 +3957,12 @@ export function Gallery3D({
                   duration: 0.4,
                   ease: [0.25, 0.46, 0.45, 0.94],
                 }}
-                className="flex min-h-0 w-full flex-col gap-10 justify-start pt-8 sm:pt-10"
+                className="min-h-0 w-full"
               >
+                <div
+                  ref={detailInfoRef}
+                  className="flex min-h-0 w-full flex-col gap-10 justify-start pt-8 sm:pt-10"
+                >
                 <div>
                   <p className="mb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
                     {localizedCategory(messages, selectedImage.category)}
@@ -4064,6 +4068,7 @@ export function Gallery3D({
                       />
                     </a>
                   ) : null}
+                </div>
                 </div>
               </motion.div>
 

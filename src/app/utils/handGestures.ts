@@ -2,29 +2,31 @@ import type { NormalizedLandmark } from "@mediapipe/tasks-vision";
 
 export type HandGestureKind =
   | "none"
-  | "pinch"
-  | "indexUp"
-  | "uBack"
   | "fist"
-  | "open";
+  | "openPalm"
+  | "indexUp"
+  | "okSign"
+  | "palmDown";
 
 export type ClassifiedHand = {
   detected: boolean;
   gesture: HandGestureKind;
-  pinchX: number;
-  pinchY: number;
+  /** İşaret ucu / imleç X (0–1, ayna). */
+  pointerX: number;
+  /** İşaret ucu / imleç Y (0–1). */
+  pointerY: number;
   palmX: number;
   palmY: number;
   indexY: number;
-  pinchProximity: number;
+  wristX: number;
+  wristY: number;
 };
 
-export const PINCH_HIGHLIGHT_LANDMARKS = [3, 4, 8] as const;
 export const OPEN_PALM_HIGHLIGHT_LANDMARKS = [0, 4, 8, 12, 16, 20] as const;
 export const FIST_HIGHLIGHT_LANDMARKS = [0, 5, 9, 13, 17] as const;
-export const PRAYER_HIGHLIGHT_LANDMARKS = [0, 4, 8, 12] as const;
-export const INDEX_HIGHLIGHT_LANDMARK = 8;
-export const UBACK_HIGHLIGHT_LANDMARKS = [4, 8] as const;
+export const INDEX_HIGHLIGHT_LANDMARKS = [6, 7, 8] as const;
+export const OK_SIGN_HIGHLIGHT_LANDMARKS = [3, 4, 8] as const;
+export const PALM_DOWN_HIGHLIGHT_LANDMARKS = [0, 5, 9, 13, 17] as const;
 
 export const HAND_CONNECTIONS: ReadonlyArray<readonly [number, number]> = [
   [0, 1], [1, 2], [2, 3], [3, 4],
@@ -97,87 +99,20 @@ export function isUserRightHand(landmarks: NormalizedLandmark[]): boolean {
   return x < 0.5;
 }
 
-export function thumbIndexProximity(landmarks: NormalizedLandmark[]): number {
-  const span = Math.max(palmSpan(landmarks), 1e-4);
-  const tipDist = dist(landmarks[4], landmarks[8]);
-  const baseDist = dist(landmarks[4], landmarks[5]);
-  const tipScore = 1 - Math.min(1, Math.max(0, tipDist / (span * 0.62)));
-  const baseScore = 1 - Math.min(1, Math.max(0, baseDist / (span * 0.45)));
-  return Math.max(tipScore, baseScore * 0.95);
+/** ✊ Yumruk */
+export function isFistGesture(landmarks: NormalizedLandmark[]): boolean {
+  return countExtendedFingers(landmarks) <= 2;
 }
 
-/** İki uç birbirine değiyor — referans PNG / video pinch. */
-export function isPinchGesture(landmarks: NormalizedLandmark[]): boolean {
-  const span = palmSpan(landmarks);
-  const tipDist = dist(landmarks[4], landmarks[8]);
-  const baseDist = dist(landmarks[4], landmarks[5]);
-  const tipsTouch = tipDist < span * 0.5;
-  const cShape = tipDist < span * 0.72 && baseDist < span * 0.44;
-  if (!tipsTouch && !cShape) return false;
-  return countExtendedFingers(landmarks) <= 3;
-}
-
-export function isOpenPalmGesture(landmarks: NormalizedLandmark[]): boolean {
-  return countExtendedFingers(landmarks) >= 4;
-}
-
-/** Ekrana dönük 5 parmak açık avuç. */
+/** 🖐️ Beş parmak açık */
 export function isFiveFingerOpenPalm(landmarks: NormalizedLandmark[]): boolean {
   return countExtendedFingers(landmarks) >= 5;
 }
 
-/** Yumruk — parmaklar kapalı (detay sayfasını kapat). */
-export function isFistGesture(landmarks: NormalizedLandmark[]): boolean {
-  return countExtendedFingers(landmarks) <= 1;
-}
-
-/**
- * 🙏 — iki avuç birbirine yakın, parmaklar yukarı (uzaklaştır + merkez).
- */
-export function isPrayerHands(
-  left: NormalizedLandmark[],
-  right: NormalizedLandmark[],
-): boolean {
-  const lc = palmCenter(left);
-  const rc = palmCenter(right);
-  const palmGap = distXY(lc, rc);
-  const avgHand = (palmSpan(left) + palmSpan(right)) / 2;
-  if (palmGap > avgHand * 0.48) return false;
-  if (Math.abs(lc.y - rc.y) > avgHand * 0.32) return false;
-
-  const indexGap = dist(left[8], right[8]);
-  const middleGap = dist(left[12], right[12]);
-  if (indexGap > avgHand * 0.4 || middleGap > avgHand * 0.45) return false;
-
-  const leftUp = left[8].y < lc.y + avgHand * 0.08;
-  const rightUp = right[8].y < rc.y + avgHand * 0.08;
-  return leftUp && rightUp;
-}
-
-/**
- * Teslim ol — iki el 5 parmak açık, yukarıda, birbirinden ayrı (varsayılan boyuta dön).
- */
-export function isSurrenderPose(
-  left: NormalizedLandmark[],
-  right: NormalizedLandmark[],
-): boolean {
-  if (!isFiveFingerOpenPalm(left) || !isFiveFingerOpenPalm(right)) return false;
-  if (isPrayerHands(left, right)) return false;
-
-  const lc = palmCenter(left);
-  const rc = palmCenter(right);
-  const avgY = (lc.y + rc.y) * 0.5;
-  if (avgY > 0.44) return false;
-
-  const palmGap = distXY(lc, rc);
-  const avgHand = (palmSpan(left) + palmSpan(right)) / 2;
-  return palmGap > avgHand * 0.85;
-}
-
-/** İşaret yukarı — baş parmak uzak (seçim için artık kullanılmıyor ama tanı kalsın). */
+/** ☝️ İşaret parmağı yukarı — imleç */
 export function isIndexUpGesture(landmarks: NormalizedLandmark[]): boolean {
   const span = palmSpan(landmarks);
-  if (dist(landmarks[4], landmarks[8]) < span * 0.38) return false;
+  if (dist(landmarks[4], landmarks[8]) < span * 0.42) return false;
   return (
     fingerExtended(landmarks, 8, 6) &&
     !fingerExtended(landmarks, 12, 10) &&
@@ -186,23 +121,128 @@ export function isIndexUpGesture(landmarks: NormalizedLandmark[]): boolean {
   );
 }
 
-/**
- * U / L — işaret yukarı, baş yana açık (detaydan geri).
- * Kullanıcının 2. PNG’sindeki pose.
- */
-export function isUBackGesture(landmarks: NormalizedLandmark[]): boolean {
+/** 👌 OK işareti — gezegen seç */
+export function isOkSignGesture(landmarks: NormalizedLandmark[]): boolean {
+  if (isIndexUpGesture(landmarks)) return false;
   const span = palmSpan(landmarks);
-  const thumbIndex = dist(landmarks[4], landmarks[8]);
-  if (thumbIndex < span * 0.52) return false;
-  const indexUp = fingerExtended(landmarks, 8, 6);
-  const thumbOut = fingerExtended(landmarks, 4, 3);
-  const middleDown = !fingerExtended(landmarks, 12, 10);
-  const ringDown = !fingerExtended(landmarks, 16, 14);
-  const pinkyDown = !fingerExtended(landmarks, 20, 18);
-  if (!indexUp || !thumbOut) return false;
-  const thumbIndexX = landmarks[4].x - landmarks[8].x;
-  const thumbApart = Math.abs(thumbIndexX) > span * 0.14;
-  return thumbApart && middleDown && ringDown && pinkyDown;
+  const tipDist = dist(landmarks[4], landmarks[8]);
+  if (tipDist > span * 0.5) return false;
+  return countExtendedFingers(landmarks) >= 2;
+}
+
+/** 👋 Açık avuç — yatay sallayarak döndür (4+ parmak). */
+export function isWaveOpenPalm(landmarks: NormalizedLandmark[]): boolean {
+  if (isFistGesture(landmarks) || isIndexUpGesture(landmarks)) return false;
+  if (isOkSignGesture(landmarks) || isPalmDownGesture(landmarks)) return false;
+  return countExtendedFingers(landmarks) >= 4;
+}
+
+/** 🫳 Avuç aşağı — detayı kapat */
+export function isPalmDownGesture(landmarks: NormalizedLandmark[]): boolean {
+  const palm = palmCenter(landmarks);
+  const span = palmSpan(landmarks);
+  const tipIds = [8, 12, 16, 20] as const;
+  const avgTipY =
+    tipIds.reduce((sum, i) => sum + landmarks[i].y, 0) / tipIds.length;
+  if (avgTipY < palm.y + span * 0.12) return false;
+  return countExtendedFingers(landmarks) >= 3;
+}
+
+/**
+ * 🖐️ Başlangıç kadrajı — tek el yukarıda, beş parmak açık.
+ */
+export function isStartPositionPose(landmarks: NormalizedLandmark[]): boolean {
+  if (!isFiveFingerOpenPalm(landmarks)) return false;
+
+  const palm = palmCenter(landmarks);
+  const span = palmSpan(landmarks);
+  if (palm.y > 0.44) return false;
+
+  const indexUp = landmarks[8].y < palm.y + span * 0.1;
+  return indexUp;
+}
+
+/** 🖐️ Zoom out — tek el açık avuç (reset pozu değil). */
+export function isOpenPalmZoomOut(landmarks: NormalizedLandmark[]): boolean {
+  return isFiveFingerOpenPalm(landmarks) && !isStartPositionPose(landmarks);
+}
+
+/** 👋 Avuç yatay kaydırma → azimuth hızı (selfie, ayna X). */
+export class WristPanTracker {
+  private lastX: number | null = null;
+  private lastT = 0;
+  private velocity = 0;
+
+  reset(): void {
+    this.lastX = null;
+    this.lastT = 0;
+    this.velocity = 0;
+  }
+
+  push(mirroredX: number, now: number): number {
+    if (this.lastX == null) {
+      this.lastX = mirroredX;
+      this.lastT = now;
+      return 0;
+    }
+
+    const dt = Math.max(1, now - this.lastT) / 1000;
+    const dx = mirroredX - this.lastX;
+    this.lastX = mirroredX;
+    this.lastT = now;
+
+    if (Math.abs(dx) < 0.0004) {
+      this.velocity *= 0.72;
+      return this.velocity;
+    }
+
+    const instant = (dx / dt) * 0.42;
+    this.velocity += (instant - this.velocity) * 0.48;
+    return THREE_CLAMP(this.velocity, -5, 5);
+  }
+}
+
+/** @deprecated Use WristPanTracker — kept for reference */
+export class WristCircleTracker {
+  private points: Array<{ x: number; y: number; t: number }> = [];
+
+  push(wrist: { x: number; y: number }, now: number): void {
+    this.points.push({ x: wrist.x, y: wrist.y, t: now });
+    this.points = this.points.filter((p) => now - p.t < 720);
+  }
+
+  reset(): void {
+    this.points = [];
+  }
+
+  /** Radyan/saniye benzeri azimuth hızı; işaret yönünde döner. */
+  getRotateVelocity(): number {
+    if (this.points.length < 10) return 0;
+
+    const cx =
+      this.points.reduce((sum, p) => sum + p.x, 0) / this.points.length;
+    const cy =
+      this.points.reduce((sum, p) => sum + p.y, 0) / this.points.length;
+
+    let totalAngle = 0;
+    for (let i = 1; i < this.points.length; i += 1) {
+      const a = this.points[i - 1];
+      const b = this.points[i];
+      const angA = Math.atan2(a.y - cy, a.x - cx);
+      const angB = Math.atan2(b.y - cy, b.x - cx);
+      let delta = angB - angA;
+      while (delta > Math.PI) delta -= Math.PI * 2;
+      while (delta < -Math.PI) delta += Math.PI * 2;
+      totalAngle += delta;
+    }
+
+    if (Math.abs(totalAngle) < 0.55) return 0;
+    return THREE_CLAMP(totalAngle * 0.085, -2.4, 2.4);
+  }
+}
+
+function THREE_CLAMP(v: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, v));
 }
 
 export function classifyHand(
@@ -212,35 +252,41 @@ export function classifyHand(
     return {
       detected: false,
       gesture: "none",
-      pinchX: 0.5,
-      pinchY: 0.5,
+      pointerX: 0.5,
+      pointerY: 0.5,
       palmX: 0.5,
       palmY: 0.5,
       indexY: 0.5,
-      pinchProximity: 0,
+      wristX: 0.5,
+      wristY: 0.5,
     };
   }
 
   const palm = palmCenter(landmarks);
-  const proximity = thumbIndexProximity(landmarks);
-  let gesture: HandGestureKind = "none";
-  if (isUBackGesture(landmarks)) gesture = "uBack";
-  else if (isPinchGesture(landmarks)) gesture = "pinch";
-  else if (isFistGesture(landmarks)) gesture = "fist";
-  else if (isOpenPalmGesture(landmarks)) gesture = "open";
-  else if (isIndexUpGesture(landmarks)) gesture = "indexUp";
-
-  const thumb = landmarks[4];
   const index = landmarks[8];
+  const thumb = landmarks[4];
+  const wrist = landmarks[WRIST];
+
+  let gesture: HandGestureKind = "none";
+  if (isPalmDownGesture(landmarks)) gesture = "palmDown";
+  else if (isOkSignGesture(landmarks)) gesture = "okSign";
+  else if (isIndexUpGesture(landmarks)) gesture = "indexUp";
+  else if (isFistGesture(landmarks)) gesture = "fist";
+  else if (isFiveFingerOpenPalm(landmarks)) gesture = "openPalm";
+
+  const okAim = gesture === "okSign";
+  const pointerX = okAim ? mirrorX((thumb.x + index.x) / 2) : mirrorX(index.x);
+  const pointerY = okAim ? (thumb.y + index.y) / 2 : index.y;
 
   return {
     detected: true,
     gesture,
-    pinchX: mirrorX((thumb.x + index.x) * 0.5),
-    pinchY: (thumb.y + index.y) * 0.5,
+    pointerX,
+    pointerY,
     palmX: mirrorX(palm.x),
     palmY: palm.y,
     indexY: index.y,
-    pinchProximity: proximity,
+    wristX: mirrorX(wrist.x),
+    wristY: wrist.y,
   };
 }

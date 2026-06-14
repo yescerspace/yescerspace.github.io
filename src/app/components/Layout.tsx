@@ -4,6 +4,8 @@ import { LanguageProvider, useLanguage } from "../context/LanguageContext";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { FooterNav } from "./FooterNav";
 import { CameraControlButton } from "./CameraControlButton";
+import { GalleryHandTracking } from "./GalleryHandTracking";
+import { HandControlOverlay } from "./HandControlOverlay";
 import { GalleryHandControlProvider } from "./galleryHandControl";
 import { syncDocumentCanonical } from "../config/site";
 import { cn } from "./ui/utils";
@@ -43,7 +45,7 @@ function LayoutShell() {
             <Link
               to="/"
               lang="en"
-              className="brand-title inline-block text-[calc(1.25rem+1pt)] tracking-[0.22em] text-[#007FFF] transition-opacity hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#007FFF] sm:text-[calc(1.375rem+1pt)]"
+              className="brand-title inline-block text-[calc(1rem+1pt)] leading-none tracking-[0.14em] text-[#007FFF] transition-opacity hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#007FFF] sm:text-[calc(1.375rem+1pt)] sm:leading-normal sm:tracking-[0.22em]"
             >
               {messages.layout.brandName}
             </Link>
@@ -74,6 +76,13 @@ function LayoutShell() {
           <FooterNav />
         </div>
       </div>
+
+      {isGallery ? (
+        <>
+          <GalleryHandTracking />
+          <HandControlOverlay />
+        </>
+      ) : null}
     </div>
   );
 }

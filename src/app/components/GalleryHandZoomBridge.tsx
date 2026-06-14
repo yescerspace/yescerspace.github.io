@@ -4,6 +4,7 @@ import type { MutableRefObject } from "react";
 import * as THREE from "three";
 import type { OrbitControls as StdOrbitControls } from "three-stdlib";
 import { HAND_ZOOM_ANIM_SMOOTH, useGalleryHandControl } from "./galleryHandControl";
+import { setOrbitDistance } from "./GalleryOrbitWheelSmooth";
 
 type OrbitSnapshot = {
   distance: number;
@@ -21,11 +22,10 @@ type GalleryHandZoomBridgeProps = {
   defaultPolarRef: MutableRefObject<number | null>;
 };
 
-import { setOrbitDistance } from "./GalleryOrbitWheelSmooth";
-
 /**
- * 🙏 → max zoom-out + azimuth 0 (merkez)
- * Teslim ol → açılış mesafesi + varsayılan açılar
+ * ✊ → zoom in
+ * 🖐️ → zoom out
+ * 🖐️ yukarı → başlangıç kadrajı
  */
 export function GalleryHandZoomBridge({
   orbitControlsRef,
@@ -55,15 +55,39 @@ export function GalleryHandZoomBridge({
 
     const s = hand.sampleRef.current;
     const now = performance.now();
+    const zoomInTarget = THREE.MathUtils.lerp(
+      minDistance,
+      defaultDistance,
+      0.22,
+    );
 
-    if (s.zoomOutPulse && now - lastPulseMsRef.current > 400) {
+    if (s.fistHeld) {
+      targetRef.current = {
+        distance: zoomInTarget,
+        azimuth: controls.getAzimuthalAngle(),
+        polar: controls.getPolarAngle(),
+      };
+    } else if (s.openPalmHeld && s.mode !== "rotate") {
+      targetRef.current = {
+        distance: maxDistance,
+        azimuth: controls.getAzimuthalAngle(),
+        polar: controls.getPolarAngle(),
+      };
+    } else if (s.zoomInPulse && now - lastPulseMsRef.current > 350) {
+      targetRef.current = {
+        distance: zoomInTarget,
+        azimuth: controls.getAzimuthalAngle(),
+        polar: controls.getPolarAngle(),
+      };
+      lastPulseMsRef.current = now;
+    } else if (s.zoomOutPulse && now - lastPulseMsRef.current > 350) {
       targetRef.current = {
         distance: maxDistance,
         azimuth: 0,
         polar: defaultPolar,
       };
       lastPulseMsRef.current = now;
-    } else if (s.resetZoomPulse && now - lastPulseMsRef.current > 400) {
+    } else if (s.resetZoomPulse && now - lastPulseMsRef.current > 350) {
       targetRef.current = {
         distance: THREE.MathUtils.clamp(defaultDistance, minDistance, maxDistance),
         azimuth: defaultAzimuthRad,
@@ -84,9 +108,11 @@ export function GalleryHandZoomBridge({
     const curAz = controls.getAzimuthalAngle();
     const curPol = controls.getPolarAngle();
 
-    const nextDist = THREE.MathUtils.lerp(curDist, target.distance, HAND_ZOOM_ANIM_SMOOTH);
-    const nextAz = THREE.MathUtils.lerp(curAz, target.azimuth, HAND_ZOOM_ANIM_SMOOTH);
-    const nextPol = THREE.MathUtils.lerp(curPol, target.polar, HAND_ZOOM_ANIM_SMOOTH);
+    const held = s.fistHeld || s.openPalmHeld;
+    const smooth = held ? HAND_ZOOM_ANIM_SMOOTH * 1.3 : HAND_ZOOM_ANIM_SMOOTH;
+    const nextDist = THREE.MathUtils.lerp(curDist, target.distance, smooth);
+    const nextAz = THREE.MathUtils.lerp(curAz, target.azimuth, smooth);
+    const nextPol = THREE.MathUtils.lerp(curPol, target.polar, smooth);
 
     setOrbitDistance(controls, nextDist);
     controls.setAzimuthalAngle(nextAz);
@@ -94,6 +120,7 @@ export function GalleryHandZoomBridge({
     controls.update();
 
     const done =
+      !held &&
       Math.abs(nextDist - target.distance) < 0.04 &&
       Math.abs(nextAz - target.azimuth) < 0.012 &&
       Math.abs(nextPol - target.polar) < 0.012;

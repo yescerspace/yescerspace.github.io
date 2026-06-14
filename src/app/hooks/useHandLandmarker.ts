@@ -12,13 +12,16 @@ import {
 import {
   classifyHand,
   FIST_HIGHLIGHT_LANDMARKS,
-  isFiveFingerOpenPalm,
+  INDEX_HIGHLIGHT_LANDMARKS,
   isFistGesture,
-  isPrayerHands,
-  isSurrenderPose,
+  isOpenPalmZoomOut,
+  isStartPositionPose,
   isUserRightHand,
+  OK_SIGN_HIGHLIGHT_LANDMARKS,
   OPEN_PALM_HIGHLIGHT_LANDMARKS,
-  PRAYER_HIGHLIGHT_LANDMARKS,
+  PALM_DOWN_HIGHLIGHT_LANDMARKS,
+  WristPanTracker,
+  isWaveOpenPalm,
 } from "../utils/handGestures";
 import { HAND_GESTURE_PULSE_COOLDOWN_MS } from "../components/galleryHandControl";
 
@@ -28,13 +31,57 @@ const HAND_MODEL_URL =
 const EMPTY_HAND: PhysicalHandState = {
   detected: false,
   gesture: "none",
-  pinchX: 0.5,
-  pinchY: 0.5,
+  pointerX: 0.5,
+  pointerY: 0.5,
   palmX: 0.5,
   palmY: 0.5,
   indexY: 0.5,
-  pinchProximity: 0,
+  wristX: 0.5,
+  wristY: 0.5,
 };
+
+function assignUserHands(
+  landmarks: NormalizedLandmark[][],
+  handednesses: Array<Array<{ categoryName?: string }>> | undefined,
+): { userRightLm?: NormalizedLandmark[]; userLeftLm?: NormalizedLandmark[] } {
+  let userRightLm: NormalizedLandmark[] | undefined;
+  let userLeftLm: NormalizedLandmark[] | undefined;
+
+  for (let i = 0; i < landmarks.length; i += 1) {
+    const lm = landmarks[i];
+    if (!lm) continue;
+
+    const mpLabel = handednesses?.[i]?.[0]?.categoryName;
+    const isUserRight =
+      mpLabel === "Right" || (mpLabel == null && isUserRightHand(lm));
+
+    if (isUserRight && !userRightLm) userRightLm = lm;
+    else if (!isUserRight && !userLeftLm) userLeftLm = lm;
+    else if (!userRightLm) userRightLm = lm;
+    else if (!userLeftLm) userLeftLm = lm;
+  }
+
+  return { userRightLm, userLeftLm };
+}
+
+function gestureHighlights(
+  gesture: PhysicalHandState["gesture"],
+): number[] {
+  switch (gesture) {
+    case "fist":
+      return [...FIST_HIGHLIGHT_LANDMARKS];
+    case "openPalm":
+      return [...OPEN_PALM_HIGHLIGHT_LANDMARKS];
+    case "indexUp":
+      return [...INDEX_HIGHLIGHT_LANDMARKS];
+    case "okSign":
+      return [...OK_SIGN_HIGHLIGHT_LANDMARKS];
+    case "palmDown":
+      return [...PALM_DOWN_HIGHLIGHT_LANDMARKS];
+    default:
+      return [];
+  }
+}
 
 export function useHandLandmarker(opts: {
   enabled: boolean;
@@ -55,11 +102,13 @@ export function useHandLandmarker(opts: {
   const onErrorRef = useRef(onError);
   const onModeChangeRef = useRef(onModeChange);
   const lastPublishedModeRef = useRef<HandControlMode>("free");
-  const wasLeftFistRef = useRef(false);
-  const wasPrayerRef = useRef(false);
-  const wasSurrenderRef = useRef(false);
-  const lastZoomPulseMsRef = useRef(0);
-  const prevModalOpenRef = useRef(false);
+  const wasStartPoseRef = useRef(false);
+  const wasAnyFistRef = useRef(false);
+  const wasOpenPalmRef = useRef(false);
+  const wasOkSignRef = useRef(false);
+  const wasPalmDownRef = useRef(false);
+  const lastPulseMsRef = useRef(0);
+  const wristTrackerRef = useRef(new WristPanTracker());
 
   modalOpenRef.current = modalOpen;
   onReadyRef.current = onReady;
@@ -71,10 +120,18 @@ export function useHandLandmarker(opts: {
     mode: "free",
     userLeft: { ...EMPTY_HAND },
     userRight: { ...EMPTY_HAND },
-    handsSpan: 0,
+    pointerX: 0.5,
+    pointerY: 0.5,
+    pointerActive: false,
+    selectPulse: false,
     closePulse: false,
-    zoomOutPulse: false,
     resetZoomPulse: false,
+    zoomOutPulse: false,
+    openPalmHeld: false,
+    zoomInPulse: false,
+    fistHeld: false,
+    rotateVelocity: 0,
+    waveActive: false,
     orbitLocked: false,
     overlayHands: [],
   });
@@ -88,9 +145,12 @@ export function useHandLandmarker(opts: {
       if (video) video.srcObject = null;
       landmarkerRef.current?.close();
       landmarkerRef.current = null;
-      wasLeftFistRef.current = false;
-      wasPrayerRef.current = false;
-      wasSurrenderRef.current = false;
+      wasStartPoseRef.current = false;
+      wasAnyFistRef.current = false;
+      wasOpenPalmRef.current = false;
+      wasOkSignRef.current = false;
+      wasPalmDownRef.current = false;
+      wristTrackerRef.current.reset();
       sampleRef.current = makeEmptySample();
       return;
     }
@@ -109,89 +169,117 @@ export function useHandLandmarker(opts: {
         const now = performance.now();
         const result = landmarker.detectForVideo(video, now);
         const handCount = Math.min(result.landmarks.length, 2);
-
-        let userRightLm: NormalizedLandmark[] | undefined;
-        let userLeftLm: NormalizedLandmark[] | undefined;
         const overlayHands: GalleryHandSample["overlayHands"] = [];
 
-        for (let i = 0; i < handCount; i += 1) {
-          const lm = result.landmarks[i];
-          if (!lm) continue;
-          const isRight = isUserRightHand(lm);
-          if (isRight && !userRightLm) userRightLm = lm;
-          else if (!isRight && !userLeftLm) userLeftLm = lm;
-          else if (!userRightLm) userRightLm = lm;
-          else if (!userLeftLm) userLeftLm = lm;
-        }
+        const { userRightLm, userLeftLm } = assignUserHands(
+          result.landmarks.slice(0, handCount),
+          result.handednesses ?? result.handedness,
+        );
 
         const userRight = classifyHand(userRightLm);
         const userLeft = classifyHand(userLeftLm);
 
-        const leftOpen = userLeftLm ? isFiveFingerOpenPalm(userLeftLm) : false;
-        const rightOpen = userRightLm ? isFiveFingerOpenPalm(userRightLm) : false;
-
-        const handsSpan =
-          userLeft.detected && userRight.detected
-            ? Math.hypot(
-                userRight.palmX - userLeft.palmX,
-                userRight.palmY - userLeft.palmY,
-              )
-            : 0;
+        const startPose =
+          (userLeftLm ? isStartPositionPose(userLeftLm) : false) ||
+          (userRightLm ? isStartPositionPose(userRightLm) : false);
 
         const leftFist = userLeftLm ? isFistGesture(userLeftLm) : false;
-        const prayer =
-          userLeftLm && userRightLm
-            ? isPrayerHands(userLeftLm, userRightLm)
-            : false;
-        const surrender =
-          userLeftLm && userRightLm
-            ? isSurrenderPose(userLeftLm, userRightLm)
-            : false;
+        const rightFist = userRightLm ? isFistGesture(userRightLm) : false;
+        const anyFist = leftFist || rightFist;
 
-        if (modalOpenRef.current && !prevModalOpenRef.current) {
-          wasLeftFistRef.current = leftFist;
+        const okSign =
+          userRight.gesture === "okSign" || userLeft.gesture === "okSign";
+        const palmDown =
+          userRight.gesture === "palmDown" || userLeft.gesture === "palmDown";
+        const pointerHand =
+          userRight.gesture === "indexUp"
+            ? userRight
+            : userLeft.gesture === "indexUp"
+              ? userLeft
+              : null;
+
+        const leftWave = userLeftLm ? isWaveOpenPalm(userLeftLm) : false;
+        const rightWave = userRightLm ? isWaveOpenPalm(userRightLm) : false;
+        const waveHand =
+          rightWave && userRight.detected
+            ? userRight
+            : leftWave && userLeft.detected
+              ? userLeft
+              : null;
+
+        let rotateVelocity = 0;
+        if (waveHand && !anyFist && !pointerHand && !okSign && !palmDown) {
+          rotateVelocity = wristTrackerRef.current.push(waveHand.palmX, now);
+        } else {
+          wristTrackerRef.current.reset();
         }
-        prevModalOpenRef.current = modalOpenRef.current;
+
+        const waveActive = waveHand != null && Math.abs(rotateVelocity) > 0.006;
+
+        const leftOpenZoom =
+          userLeftLm &&
+          isOpenPalmZoomOut(userLeftLm) &&
+          userLeft.gesture === "openPalm";
+        const rightOpenZoom =
+          userRightLm &&
+          isOpenPalmZoomOut(userRightLm) &&
+          userRight.gesture === "openPalm";
+        // 👋 yatay sallama ile zoom out çakışmasın
+        const openPalmHeld = Boolean(
+          (leftOpenZoom || rightOpenZoom) && !waveHand,
+        );
 
         let closePulse = false;
-        if (modalOpenRef.current && leftFist && !wasLeftFistRef.current) {
-          closePulse = true;
-        }
-        wasLeftFistRef.current = leftFist;
-
-        let zoomOutPulse = false;
+        let selectPulse = false;
         let resetZoomPulse = false;
-        if (!modalOpenRef.current) {
-          if (prayer && !wasPrayerRef.current) {
-            zoomOutPulse = true;
+        let zoomOutPulse = false;
+        let zoomInPulse = false;
+        let fistHeld = false;
+
+        if (modalOpenRef.current) {
+          if (palmDown && !wasPalmDownRef.current) {
+            closePulse = true;
           }
-          if (surrender && !wasSurrenderRef.current) {
+        } else {
+          if (startPose && !wasStartPoseRef.current) {
             resetZoomPulse = true;
           }
-          if (zoomOutPulse || resetZoomPulse) {
-            if (now - lastZoomPulseMsRef.current < HAND_GESTURE_PULSE_COOLDOWN_MS) {
-              zoomOutPulse = false;
-              resetZoomPulse = false;
-            } else {
-              lastZoomPulseMsRef.current = now;
-            }
+          if (openPalmHeld && !wasOpenPalmRef.current) {
+            zoomOutPulse = true;
+          }
+          if (anyFist && !wasAnyFistRef.current) {
+            zoomInPulse = true;
+          }
+          fistHeld = anyFist;
+          if (okSign && !wasOkSignRef.current) {
+            selectPulse = true;
+          }
+
+          const pulse =
+            resetZoomPulse || zoomOutPulse || zoomInPulse || selectPulse;
+          if (pulse && now - lastPulseMsRef.current < HAND_GESTURE_PULSE_COOLDOWN_MS) {
+            resetZoomPulse = false;
+            zoomOutPulse = false;
+            zoomInPulse = false;
+            selectPulse = false;
+          } else if (pulse) {
+            lastPulseMsRef.current = now;
           }
         }
-        wasPrayerRef.current = prayer;
-        wasSurrenderRef.current = surrender;
+
+        wasStartPoseRef.current = startPose;
+        wasAnyFistRef.current = anyFist;
+        wasOpenPalmRef.current = openPalmHeld;
+        wasOkSignRef.current = okSign;
+        wasPalmDownRef.current = palmDown;
 
         let mode: HandControlMode = "free";
         if (modalOpenRef.current) {
           mode = "detail";
-        } else if (
-          leftOpen &&
-          rightOpen &&
-          userLeft.detected &&
-          userRight.detected &&
-          !prayer &&
-          !surrender
-        ) {
-          mode = "steer";
+        } else if (pointerHand || okSign) {
+          mode = "pointer";
+        } else if (waveHand) {
+          mode = "rotate";
         }
 
         if (mode !== lastPublishedModeRef.current) {
@@ -199,53 +287,39 @@ export function useHandLandmarker(opts: {
           onModeChangeRef.current(mode);
         }
 
-        const buildOverlay = (
-          lm: NormalizedLandmark[],
-          handed: "left" | "right",
-          highlights: number[],
-        ) => {
-          overlayHands.push({
-            handed,
-            points: lm.map((p) => ({ x: p.x, y: p.y })),
-            highlights,
-          });
-        };
-
         if (userRightLm) {
-          const hi = prayer
-            ? [...PRAYER_HIGHLIGHT_LANDMARKS]
-            : rightOpen
-              ? [...OPEN_PALM_HIGHLIGHT_LANDMARKS]
-              : [];
-          buildOverlay(userRightLm, "right", hi);
+          overlayHands.push({
+            handed: "right",
+            points: userRightLm.map((p) => ({ x: p.x, y: p.y })),
+            highlights: gestureHighlights(userRight.gesture),
+          });
         }
         if (userLeftLm) {
-          const hi = prayer
-            ? [...PRAYER_HIGHLIGHT_LANDMARKS]
-            : leftFist
-              ? [...FIST_HIGHLIGHT_LANDMARKS]
-              : leftOpen
-                ? [...OPEN_PALM_HIGHLIGHT_LANDMARKS]
-                : [];
-          buildOverlay(userLeftLm, "left", hi);
+          overlayHands.push({
+            handed: "left",
+            points: userLeftLm.map((p) => ({ x: p.x, y: p.y })),
+            highlights: gestureHighlights(userLeft.gesture),
+          });
         }
-
-        const orbitLocked = sampleRef.current.orbitLocked;
 
         sampleRef.current = {
           handDetected: userRight.detected || userLeft.detected,
           mode,
-          userLeft: leftFist
-            ? { ...userLeft, gesture: "fist" }
-            : leftOpen
-              ? { ...userLeft, gesture: "open" }
-              : userLeft,
-          userRight: rightOpen ? { ...userRight, gesture: "open" } : userRight,
-          handsSpan,
+          userLeft,
+          userRight,
+          pointerX: pointerHand?.pointerX ?? 0.5,
+          pointerY: pointerHand?.pointerY ?? 0.5,
+          pointerActive: pointerHand != null,
+          selectPulse,
           closePulse,
-          zoomOutPulse,
           resetZoomPulse,
-          orbitLocked,
+          zoomOutPulse,
+          openPalmHeld,
+          zoomInPulse,
+          fistHeld,
+          rotateVelocity,
+          waveActive,
+          orbitLocked: sampleRef.current.orbitLocked,
           overlayHands,
         };
       }
