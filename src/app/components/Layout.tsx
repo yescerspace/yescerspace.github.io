@@ -4,7 +4,6 @@ import { LanguageProvider, useLanguage } from "../context/LanguageContext";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { FooterNav } from "./FooterNav";
 import { CameraControlButton } from "./CameraControlButton";
-import { GalleryHandTracking } from "./GalleryHandTracking";
 import { HandControlOverlay } from "./HandControlOverlay";
 import { GalleryHandControlProvider } from "./galleryHandControl";
 import { syncDocumentCanonical } from "../config/site";
@@ -77,12 +76,7 @@ function LayoutShell() {
         </div>
       </div>
 
-      {isGallery ? (
-        <>
-          <GalleryHandTracking />
-          <HandControlOverlay />
-        </>
-      ) : null}
+      {isGallery ? <HandControlOverlay /> : null}
     </div>
   );
 }

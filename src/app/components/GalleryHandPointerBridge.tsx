@@ -19,10 +19,14 @@ type GalleryHandPointerBridgeProps = {
   onPick: (image: GalleryImage) => void;
 };
 
-const HOVER_MEMORY_MS = 1200;
-const OK_PICK_HOLD_FRAMES = 3;
+/** Kamera açıldıktan sonra yanlış 👌 algısına karşı bekleme. */
+const CAMERA_ARM_MS = 800;
+/** ☝️ hover → 👌 geçişi için bellek. */
+const INDEX_HOVER_MEMORY_MS = 1800;
+/** 👌 en az bu kadar kare tutulmalı. */
+const OK_PICK_HOLD_FRAMES = 6;
 
-function aimFromSample(
+function aimForIndexUp(
   pointerActive: boolean,
   pointerX: number,
   pointerY: number,
@@ -30,12 +34,6 @@ function aimFromSample(
   right: PhysicalHandState,
 ): { x: number; y: number } | null {
   if (pointerActive) return { x: pointerX, y: pointerY };
-  if (right.detected && right.gesture === "okSign") {
-    return { x: right.pointerX, y: right.pointerY };
-  }
-  if (left.detected && left.gesture === "okSign") {
-    return { x: left.pointerX, y: left.pointerY };
-  }
   if (right.detected && right.gesture === "indexUp") {
     return { x: right.pointerX, y: right.pointerY };
   }
@@ -100,10 +98,11 @@ export function GalleryHandPointerBridge({
   const hand = useGalleryHandControl();
   const { camera, scene, raycaster } = useThree();
   const hoveredRef = useRef(hoveredIndex);
-  const lastHoverRef = useRef<{ index: number; at: number } | null>(null);
+  const lastIndexHoverRef = useRef<{ index: number; at: number } | null>(null);
   const okHoldFramesRef = useRef(0);
   const okPickLockedRef = useRef(false);
-  const wasOkSignRef = useRef(false);
+  const enabledSinceRef = useRef(0);
+  const wasEnabledRef = useRef(false);
 
   hoveredRef.current = hoveredIndex;
 
@@ -111,32 +110,51 @@ export function GalleryHandPointerBridge({
     if (!hand?.enabled) {
       okHoldFramesRef.current = 0;
       okPickLockedRef.current = false;
-      wasOkSignRef.current = false;
+      wasEnabledRef.current = false;
+      lastIndexHoverRef.current = null;
       return;
+    }
+
+    const now = performance.now();
+
+    if (!wasEnabledRef.current) {
+      wasEnabledRef.current = true;
+      enabledSinceRef.current = now;
+      okHoldFramesRef.current = 0;
+      okPickLockedRef.current = false;
+      lastIndexHoverRef.current = null;
+      if (hoveredRef.current !== null) {
+        setHoveredIndex(null);
+        hoveredRef.current = null;
+      }
     }
 
     if (modalOpen) {
       if (hoveredRef.current !== null) setHoveredIndex(null);
       okHoldFramesRef.current = 0;
       okPickLockedRef.current = false;
-      wasOkSignRef.current = false;
+      lastIndexHoverRef.current = null;
       return;
     }
 
     const s = hand.sampleRef.current;
-    const now = performance.now();
-    const aim = aimFromSample(
+    const indexAim = aimForIndexUp(
       s.pointerActive,
       s.pointerX,
       s.pointerY,
       s.userLeft,
       s.userRight,
     );
+    const okSign =
+      s.userRight.gesture === "okSign" || s.userLeft.gesture === "okSign";
+    const indexHoverFresh =
+      lastIndexHoverRef.current != null &&
+      now - lastIndexHoverRef.current.at < INDEX_HOVER_MEMORY_MS;
 
-    if (aim) {
+    if (indexAim) {
       const nextHover = raycastGalleryIndex(
-        aim.x,
-        aim.y,
+        indexAim.x,
+        indexAim.y,
         raycaster,
         camera,
         scene,
@@ -148,82 +166,36 @@ export function GalleryHandPointerBridge({
         hoveredRef.current = nextHover;
       }
       if (nextHover != null) {
-        lastHoverRef.current = { index: nextHover, at: now };
+        lastIndexHoverRef.current = { index: nextHover, at: now };
       }
+    } else if (okSign && indexHoverFresh) {
+      // ☝️ → 👌 geçişinde hover’ı koru; yeni raycast yapma.
     } else if (hoveredRef.current !== null) {
       setHoveredIndex(null);
       hoveredRef.current = null;
     }
 
-    const okSign =
-      s.userRight.gesture === "okSign" || s.userLeft.gesture === "okSign";
-
     if (!okSign) {
       okHoldFramesRef.current = 0;
       okPickLockedRef.current = false;
-    } else {
-      okHoldFramesRef.current += 1;
-
-      if (!okPickLockedRef.current && okHoldFramesRef.current >= OK_PICK_HOLD_FRAMES) {
-        const pickAim =
-          aim ??
-          (s.userRight.gesture === "okSign"
-            ? { x: s.userRight.pointerX, y: s.userRight.pointerY }
-            : { x: s.userLeft.pointerX, y: s.userLeft.pointerY });
-
-        const memory =
-          lastHoverRef.current &&
-          now - lastHoverRef.current.at < HOVER_MEMORY_MS
-            ? lastHoverRef.current.index
-            : null;
-
-        const pickIndex =
-          hoveredRef.current ??
-          memory ??
-          raycastGalleryIndex(
-            pickAim.x,
-            pickAim.y,
-            raycaster,
-            camera,
-            scene,
-            images,
-            visibleIndices,
-          );
-
-        if (pickPlanet(pickIndex, images, onPick)) {
-          okPickLockedRef.current = true;
-        }
-      }
+      return;
     }
 
-    if (okSign && !wasOkSignRef.current && !okPickLockedRef.current) {
-      const pickAim =
-        aim ??
-        (s.userRight.gesture === "okSign"
-          ? { x: s.userRight.pointerX, y: s.userRight.pointerY }
-          : { x: s.userLeft.pointerX, y: s.userLeft.pointerY });
-      const memory =
-        lastHoverRef.current && now - lastHoverRef.current.at < HOVER_MEMORY_MS
-          ? lastHoverRef.current.index
-          : null;
+    okHoldFramesRef.current += 1;
+
+    const armed = now - enabledSinceRef.current >= CAMERA_ARM_MS;
+    if (
+      armed &&
+      !okPickLockedRef.current &&
+      okHoldFramesRef.current >= OK_PICK_HOLD_FRAMES &&
+      indexHoverFresh
+    ) {
       const pickIndex =
-        hoveredRef.current ??
-        memory ??
-        raycastGalleryIndex(
-          pickAim.x,
-          pickAim.y,
-          raycaster,
-          camera,
-          scene,
-          images,
-          visibleIndices,
-        );
+        hoveredRef.current ?? lastIndexHoverRef.current?.index ?? null;
       if (pickPlanet(pickIndex, images, onPick)) {
         okPickLockedRef.current = true;
       }
     }
-
-    wasOkSignRef.current = okSign;
   });
 
   return null;

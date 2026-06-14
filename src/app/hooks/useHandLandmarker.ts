@@ -14,19 +14,22 @@ import {
   FIST_HIGHLIGHT_LANDMARKS,
   INDEX_HIGHLIGHT_LANDMARKS,
   isFistGesture,
-  isOpenPalmZoomOut,
+  isOpenPalmSplayedMove,
+  isOpenPalmZoomInHold,
   isStartPositionPose,
   isUserRightHand,
   OK_SIGN_HIGHLIGHT_LANDMARKS,
   OPEN_PALM_HIGHLIGHT_LANDMARKS,
-  PALM_DOWN_HIGHLIGHT_LANDMARKS,
-  WristPanTracker,
-  isWaveOpenPalm,
+  palmPositionDrive,
+  WristVerticalTracker,
 } from "../utils/handGestures";
 import { HAND_GESTURE_PULSE_COOLDOWN_MS } from "../components/galleryHandControl";
 
 const HAND_MODEL_URL =
   "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
+
+const MEDIAPIPE_WASM_BASE =
+  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.35/wasm";
 
 const EMPTY_HAND: PhysicalHandState = {
   detected: false,
@@ -76,11 +79,24 @@ function gestureHighlights(
       return [...INDEX_HIGHLIGHT_LANDMARKS];
     case "okSign":
       return [...OK_SIGN_HIGHLIGHT_LANDMARKS];
-    case "palmDown":
-      return [...PALM_DOWN_HIGHLIGHT_LANDMARKS];
     default:
       return [];
   }
+}
+
+function pickMoveHand(
+  userLeft: PhysicalHandState,
+  userRight: PhysicalHandState,
+  userLeftLm: NormalizedLandmark[] | undefined,
+  userRightLm: NormalizedLandmark[] | undefined,
+): PhysicalHandState | null {
+  const rightMove =
+    userRightLm && isOpenPalmSplayedMove(userRightLm) && userRight.detected;
+  const leftMove =
+    userLeftLm && isOpenPalmSplayedMove(userLeftLm) && userLeft.detected;
+  if (rightMove) return userRight;
+  if (leftMove) return userLeft;
+  return null;
 }
 
 export function useHandLandmarker(opts: {
@@ -88,14 +104,24 @@ export function useHandLandmarker(opts: {
   modalOpen: boolean;
   videoRef: React.RefObject<HTMLVideoElement | null>;
   sampleRef: React.MutableRefObject<GalleryHandSample>;
+  cameraStreamRef: React.MutableRefObject<MediaStream | null>;
+  cameraAccessPromiseRef: React.MutableRefObject<Promise<MediaStream> | null>;
   onModeChange: (mode: HandControlMode) => void;
   onReady: () => void;
   onError: (message: string) => void;
 }): void {
-  const { enabled, modalOpen, videoRef, sampleRef, onModeChange, onReady, onError } =
-    opts;
+  const {
+    enabled,
+    modalOpen,
+    videoRef,
+    sampleRef,
+    cameraStreamRef,
+    cameraAccessPromiseRef,
+    onModeChange,
+    onReady,
+    onError,
+  } = opts;
   const landmarkerRef = useRef<HandLandmarker | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
   const rafRef = useRef<number | null>(null);
   const modalOpenRef = useRef(modalOpen);
   const onReadyRef = useRef(onReady);
@@ -105,10 +131,9 @@ export function useHandLandmarker(opts: {
   const wasStartPoseRef = useRef(false);
   const wasAnyFistRef = useRef(false);
   const wasOpenPalmRef = useRef(false);
-  const wasOkSignRef = useRef(false);
-  const wasPalmDownRef = useRef(false);
+  const wasModalFistRef = useRef(false);
   const lastPulseMsRef = useRef(0);
-  const wristTrackerRef = useRef(new WristPanTracker());
+  const detailScrollTrackerRef = useRef(new WristVerticalTracker());
 
   modalOpenRef.current = modalOpen;
   onReadyRef.current = onReady;
@@ -131,7 +156,9 @@ export function useHandLandmarker(opts: {
     zoomInPulse: false,
     fistHeld: false,
     rotateVelocity: 0,
+    polarVelocity: 0,
     waveActive: false,
+    detailScrollVelocity: 0,
     orbitLocked: false,
     overlayHands: [],
   });
@@ -139,8 +166,6 @@ export function useHandLandmarker(opts: {
   useEffect(() => {
     if (!enabled) {
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
-      streamRef.current?.getTracks().forEach((t) => t.stop());
-      streamRef.current = null;
       const video = videoRef.current;
       if (video) video.srcObject = null;
       landmarkerRef.current?.close();
@@ -148,9 +173,8 @@ export function useHandLandmarker(opts: {
       wasStartPoseRef.current = false;
       wasAnyFistRef.current = false;
       wasOpenPalmRef.current = false;
-      wasOkSignRef.current = false;
-      wasPalmDownRef.current = false;
-      wristTrackerRef.current.reset();
+      wasModalFistRef.current = false;
+      detailScrollTrackerRef.current.reset();
       sampleRef.current = makeEmptySample();
       return;
     }
@@ -189,8 +213,6 @@ export function useHandLandmarker(opts: {
 
         const okSign =
           userRight.gesture === "okSign" || userLeft.gesture === "okSign";
-        const palmDown =
-          userRight.gesture === "palmDown" || userLeft.gesture === "palmDown";
         const pointerHand =
           userRight.gesture === "indexUp"
             ? userRight
@@ -198,46 +220,61 @@ export function useHandLandmarker(opts: {
               ? userLeft
               : null;
 
-        const leftWave = userLeftLm ? isWaveOpenPalm(userLeftLm) : false;
-        const rightWave = userRightLm ? isWaveOpenPalm(userRightLm) : false;
-        const waveHand =
-          rightWave && userRight.detected
-            ? userRight
-            : leftWave && userLeft.detected
-              ? userLeft
-              : null;
+        const moveHand = pickMoveHand(
+          userLeft,
+          userRight,
+          userLeftLm,
+          userRightLm,
+        );
 
         let rotateVelocity = 0;
-        if (waveHand && !anyFist && !pointerHand && !okSign && !palmDown) {
-          rotateVelocity = wristTrackerRef.current.push(waveHand.palmX, now);
+        let polarVelocity = 0;
+        let detailScrollVelocity = 0;
+
+        if (modalOpenRef.current) {
+          if (moveHand && !anyFist) {
+            detailScrollVelocity = detailScrollTrackerRef.current.push(
+              moveHand.palmY,
+              now,
+            );
+          } else {
+            detailScrollTrackerRef.current.reset();
+          }
+        } else if (moveHand && !anyFist && !pointerHand && !okSign) {
+          detailScrollTrackerRef.current.reset();
+          rotateVelocity = palmPositionDrive(moveHand.palmX);
+          polarVelocity = palmPositionDrive(moveHand.palmY);
         } else {
-          wristTrackerRef.current.reset();
+          detailScrollTrackerRef.current.reset();
         }
 
-        const waveActive = waveHand != null && Math.abs(rotateVelocity) > 0.006;
+        const waveActive =
+          !modalOpenRef.current &&
+          moveHand != null &&
+          (Math.abs(rotateVelocity) > 0.004 || Math.abs(polarVelocity) > 0.004);
 
         const leftOpenZoom =
           userLeftLm &&
-          isOpenPalmZoomOut(userLeftLm) &&
+          isOpenPalmZoomInHold(userLeftLm) &&
           userLeft.gesture === "openPalm";
         const rightOpenZoom =
           userRightLm &&
-          isOpenPalmZoomOut(userRightLm) &&
+          isOpenPalmZoomInHold(userRightLm) &&
           userRight.gesture === "openPalm";
-        // 👋 yatay sallama ile zoom out çakışmasın
+        const palmAtCenter =
+          Math.abs(rotateVelocity) < 0.012 && Math.abs(polarVelocity) < 0.012;
         const openPalmHeld = Boolean(
-          (leftOpenZoom || rightOpenZoom) && !waveHand,
+          (leftOpenZoom || rightOpenZoom) && palmAtCenter && moveHand != null,
         );
 
         let closePulse = false;
-        let selectPulse = false;
         let resetZoomPulse = false;
         let zoomOutPulse = false;
         let zoomInPulse = false;
         let fistHeld = false;
 
         if (modalOpenRef.current) {
-          if (palmDown && !wasPalmDownRef.current) {
+          if (anyFist && !wasModalFistRef.current) {
             closePulse = true;
           }
         } else {
@@ -245,23 +282,18 @@ export function useHandLandmarker(opts: {
             resetZoomPulse = true;
           }
           if (openPalmHeld && !wasOpenPalmRef.current) {
-            zoomOutPulse = true;
-          }
-          if (anyFist && !wasAnyFistRef.current) {
             zoomInPulse = true;
           }
-          fistHeld = anyFist;
-          if (okSign && !wasOkSignRef.current) {
-            selectPulse = true;
+          if (anyFist && !wasAnyFistRef.current) {
+            zoomOutPulse = true;
           }
+          fistHeld = anyFist;
 
-          const pulse =
-            resetZoomPulse || zoomOutPulse || zoomInPulse || selectPulse;
+          const pulse = resetZoomPulse || zoomOutPulse || zoomInPulse;
           if (pulse && now - lastPulseMsRef.current < HAND_GESTURE_PULSE_COOLDOWN_MS) {
             resetZoomPulse = false;
             zoomOutPulse = false;
             zoomInPulse = false;
-            selectPulse = false;
           } else if (pulse) {
             lastPulseMsRef.current = now;
           }
@@ -270,15 +302,14 @@ export function useHandLandmarker(opts: {
         wasStartPoseRef.current = startPose;
         wasAnyFistRef.current = anyFist;
         wasOpenPalmRef.current = openPalmHeld;
-        wasOkSignRef.current = okSign;
-        wasPalmDownRef.current = palmDown;
+        wasModalFistRef.current = modalOpenRef.current ? anyFist : false;
 
         let mode: HandControlMode = "free";
         if (modalOpenRef.current) {
           mode = "detail";
         } else if (pointerHand || okSign) {
           mode = "pointer";
-        } else if (waveHand) {
+        } else if (moveHand && waveActive) {
           mode = "rotate";
         }
 
@@ -310,7 +341,7 @@ export function useHandLandmarker(opts: {
           pointerX: pointerHand?.pointerX ?? 0.5,
           pointerY: pointerHand?.pointerY ?? 0.5,
           pointerActive: pointerHand != null,
-          selectPulse,
+          selectPulse: false,
           closePulse,
           resetZoomPulse,
           zoomOutPulse,
@@ -318,7 +349,9 @@ export function useHandLandmarker(opts: {
           zoomInPulse,
           fistHeld,
           rotateVelocity,
+          polarVelocity,
           waveActive,
+          detailScrollVelocity,
           orbitLocked: sampleRef.current.orbitLocked,
           overlayHands,
         };
@@ -328,9 +361,7 @@ export function useHandLandmarker(opts: {
 
     const boot = async () => {
       try {
-        const vision = await FilesetResolver.forVisionTasks(
-          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm",
-        );
+        const vision = await FilesetResolver.forVisionTasks(MEDIAPIPE_WASM_BASE);
         if (cancelled) return;
 
         let landmarker: HandLandmarker;
@@ -359,18 +390,29 @@ export function useHandLandmarker(opts: {
         }
         landmarkerRef.current = landmarker;
 
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
-          audio: false,
-        });
+        const accessPromise = cameraAccessPromiseRef.current;
+        const stream =
+          cameraStreamRef.current ??
+          (accessPromise
+            ? await accessPromise
+            : await navigator.mediaDevices.getUserMedia({
+                video: {
+                  facingMode: "user",
+                  width: { ideal: 640 },
+                  height: { ideal: 480 },
+                },
+                audio: false,
+              }));
         if (cancelled) {
-          stream.getTracks().forEach((t) => t.stop());
+          if (!cameraStreamRef.current) {
+            stream.getTracks().forEach((t) => t.stop());
+          }
           return;
         }
-        streamRef.current = stream;
+        cameraStreamRef.current = stream;
 
         let video = videoRef.current;
-        for (let i = 0; i < 40 && !video; i += 1) {
+        for (let i = 0; i < 80 && !video; i += 1) {
           await new Promise((r) => setTimeout(r, 32));
           video = videoRef.current;
         }
@@ -395,9 +437,9 @@ export function useHandLandmarker(opts: {
     return () => {
       cancelled = true;
       if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
-      streamRef.current?.getTracks().forEach((t) => t.stop());
       landmarkerRef.current?.close();
+      landmarkerRef.current = null;
       sampleRef.current = makeEmptySample();
     };
-  }, [enabled, modalOpen, videoRef, sampleRef]);
+  }, [enabled, videoRef, sampleRef, cameraStreamRef, cameraAccessPromiseRef]);
 }

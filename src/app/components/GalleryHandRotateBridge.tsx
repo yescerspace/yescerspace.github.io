@@ -1,6 +1,7 @@
 import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import type { MutableRefObject } from "react";
+import * as THREE from "three";
 import type { OrbitControls as StdOrbitControls } from "three-stdlib";
 import { HAND_ROTATE_SMOOTH, useGalleryHandControl } from "./galleryHandControl";
 
@@ -9,38 +10,57 @@ type GalleryHandRotateBridgeProps = {
   modalOpen: boolean;
 };
 
-/** 👋 Açık avuç yatay kaydırma → azimuth döndürme. */
+/** 🖐️ el konumu ↔️ azimuth · ↕️ polar (merkez = dur). */
 export function GalleryHandRotateBridge({
   orbitControlsRef,
   modalOpen,
 }: GalleryHandRotateBridgeProps) {
   const hand = useGalleryHandControl();
-  const smoothedVelocityRef = useRef(0);
+  const smoothedAzimuthRef = useRef(0);
+  const smoothedPolarRef = useRef(0);
 
   useFrame((_, delta) => {
     const controls = orbitControlsRef.current;
     if (!controls || !hand?.enabled || modalOpen) {
-      smoothedVelocityRef.current = 0;
+      smoothedAzimuthRef.current = 0;
+      smoothedPolarRef.current = 0;
       return;
     }
 
     const s = hand.sampleRef.current;
-    if (s.orbitLocked || s.mode !== "rotate") {
-      smoothedVelocityRef.current *= 0.85;
+    if (s.orbitLocked) {
+      smoothedAzimuthRef.current *= 0.85;
+      smoothedPolarRef.current *= 0.85;
       return;
     }
 
-    const target = s.rotateVelocity;
-    smoothedVelocityRef.current +=
-      (target - smoothedVelocityRef.current) * HAND_ROTATE_SMOOTH;
+    smoothedAzimuthRef.current +=
+      (s.rotateVelocity - smoothedAzimuthRef.current) * HAND_ROTATE_SMOOTH;
+    smoothedPolarRef.current +=
+      (s.polarVelocity - smoothedPolarRef.current) * HAND_ROTATE_SMOOTH;
 
-    if (Math.abs(smoothedVelocityRef.current) > 0.0004) {
+    let changed = false;
+
+    if (Math.abs(smoothedAzimuthRef.current) > 0.0004) {
       controls.setAzimuthalAngle(
         controls.getAzimuthalAngle() +
-          smoothedVelocityRef.current * delta * 2.1,
+          smoothedAzimuthRef.current * delta * 2.1,
       );
-      controls.update();
+      changed = true;
     }
+
+    if (Math.abs(smoothedPolarRef.current) > 0.0004) {
+      const nextPolar = THREE.MathUtils.clamp(
+        controls.getPolarAngle() +
+          smoothedPolarRef.current * delta * 1.75,
+        controls.minPolarAngle,
+        controls.maxPolarAngle,
+      );
+      controls.setPolarAngle(nextPolar);
+      changed = true;
+    }
+
+    if (changed) controls.update();
   });
 
   return null;

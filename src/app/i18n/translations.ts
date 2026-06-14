@@ -240,9 +240,9 @@ const en: TranslationMessages = {
     cameraControl: "camera control",
     cameraControlOn: "camera control on",
     handGestureAwaitPalm:
-      "One hand open (5 fingers), palm toward the camera.",
+      "🖐️ Five fingers splayed, hand raised — start position.",
     handGestureArmedHint:
-      "🖐️ up: reset · 👋 open palm, sweep left/right: rotate · ✊: zoom in · 🖐️: zoom out · ☝️: point · 👌: pick · 🫳: close detail",
+      "🖐️ up: start · 🖐️ ↔️↕️: steer (center=stop) · ✊: zoom out · 🖐️ hold center: zoom in · ☝️: point · 👌: pick · detail 🖐️ ↕️: scroll · ✊: close",
     handModeFree: "waiting",
     handModePointer: "pointer",
     handModeRotate: "rotate",
@@ -336,9 +336,9 @@ const de: TranslationMessages = {
     cameraControl: "camera control",
     cameraControlOn: "camera control on",
     handGestureAwaitPalm:
-      "Eine Hand offen (5 Finger), Handfläche zur Kamera.",
+      "🖐️ Fünf Finger gespreizt, Hand oben — Startposition.",
     handGestureArmedHint:
-      "🖐️ hoch: Reset · 👋 offene Hand links/rechts: drehen · ✊: rein · 🖐️: raus · ☝️: zeigen · 👌: wählen · 🫳: schließen",
+      "🖐️ hoch: Start · 🖐️ ↔️↕️: steuern (Mitte=Stopp) · ✊: raus · 🖐️ Mitte halten: rein · ☝️: zeigen · 👌: wählen · Detail 🖐️ ↕️: scrollen · ✊: schließen",
     handModeFree: "warten",
     handModePointer: "zeiger",
     handModeRotate: "drehen",
@@ -437,9 +437,10 @@ const tr: TranslationMessages = {
     brandName: "cerryhub",
     cameraControl: "camera control",
     cameraControlOn: "camera control on",
-    handGestureAwaitPalm: "Tek el açık (5 parmak), avuç kameraya dönük.",
+    handGestureAwaitPalm:
+      "🖐️ Beş parmak açık, el yukarıda — başlangıç pozisyonu.",
     handGestureArmedHint:
-      "🖐️ yukarı: sıfırla · 👋 açık avuç sağa/sola: döndür · ✊: yakınlaş · 🖐️: uzaklaş · ☝️: işaret · 👌: seç · 🫳: kapat",
+      "🖐️ yukarı: başlangıç · 🖐️ ↔️↕️: yönlendir (orta=dur) · ✊: uzaklaş · 🖐️ ortada sabit: yakınlaş · ☝️: işaret · 👌: seç · detay 🖐️ ↕️: kaydır · ✊: kapat",
     handModeFree: "bekleme",
     handModePointer: "imleç",
     handModeRotate: "döndür",

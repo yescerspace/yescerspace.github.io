@@ -1,5 +1,6 @@
 import { useLanguage } from "../context/LanguageContext";
 import {
+  requestGalleryCameraStream,
   resetGalleryHandControlState,
   useGalleryHandControl,
 } from "./galleryHandControl";
@@ -22,6 +23,15 @@ export function CameraControlButton() {
             resetGalleryHandControlState(hand);
             return;
           }
+          hand.setTrackingError(null);
+          hand.setTrackingReady(false);
+          requestGalleryCameraStream(hand).catch((err) => {
+            hand.setTrackingError(
+              err instanceof Error ? err.message : "Camera permission failed",
+            );
+            hand.setHintOpen(false);
+            hand.setEnabled(false);
+          });
           setHintOpen(true);
           setEnabled(true);
         }}

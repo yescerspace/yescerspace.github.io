@@ -23,8 +23,8 @@ type GalleryHandZoomBridgeProps = {
 };
 
 /**
- * ✊ → zoom in
- * 🖐️ → zoom out
+ * ✊ → zoom out
+ * 🖐️ sabit → zoom in
  * 🖐️ yukarı → başlangıç kadrajı
  */
 export function GalleryHandZoomBridge({
@@ -63,13 +63,13 @@ export function GalleryHandZoomBridge({
 
     if (s.fistHeld) {
       targetRef.current = {
-        distance: zoomInTarget,
+        distance: maxDistance,
         azimuth: controls.getAzimuthalAngle(),
         polar: controls.getPolarAngle(),
       };
-    } else if (s.openPalmHeld && s.mode !== "rotate") {
+    } else if (s.openPalmHeld) {
       targetRef.current = {
-        distance: maxDistance,
+        distance: zoomInTarget,
         azimuth: controls.getAzimuthalAngle(),
         polar: controls.getPolarAngle(),
       };
@@ -83,8 +83,8 @@ export function GalleryHandZoomBridge({
     } else if (s.zoomOutPulse && now - lastPulseMsRef.current > 350) {
       targetRef.current = {
         distance: maxDistance,
-        azimuth: 0,
-        polar: defaultPolar,
+        azimuth: controls.getAzimuthalAngle(),
+        polar: controls.getPolarAngle(),
       };
       lastPulseMsRef.current = now;
     } else if (s.resetZoomPulse && now - lastPulseMsRef.current > 350) {

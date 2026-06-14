@@ -2823,7 +2823,7 @@ function SceneCursor({
   const { gl } = useThree();
   useEffect(() => {
     if (handControlActive) {
-      gl.domElement.style.cursor = "default";
+      gl.domElement.style.cursor = "none";
       return () => {
         gl.domElement.style.cursor = "";
       };
@@ -3804,19 +3804,21 @@ export function Gallery3D({
       <GalleryHandModalEffect
         modalOpen={detailModalOpen}
         onCloseModal={closeModal}
+        outerScrollRef={modalDetailWheelRootRef}
+        innerScrollRef={detailModalScrollRef}
       />
       <div className="flex min-h-0 w-full flex-1 flex-col px-0 pb-0 pt-0">
         <div
           ref={galleryShellRef}
           className={cn(
             "relative min-h-[220px] w-full min-w-0 flex-1 basis-0 select-none bg-background sm:min-h-[240px]",
-            handCameraOn && "cursor-default",
+            handCameraOn && "cursor-none",
           )}
           style={{
             touchAction: "none",
             backgroundImage: "var(--app-shell-gradient)",
             backgroundAttachment: "fixed",
-            cursor: handCameraOn ? "default" : undefined,
+            cursor: handCameraOn ? "none" : undefined,
           }}
           onPointerMove={(e) => {
             const el = galleryShellRef.current;
@@ -3913,8 +3915,8 @@ export function Gallery3D({
           >
             <div
               ref={modalDetailWheelRootRef}
-              className="absolute inset-0 overflow-y-auto overscroll-y-auto p-6 sm:p-10 flex items-start justify-center"
-                style={{
+              className="absolute inset-0 flex flex-col items-stretch overflow-y-auto overscroll-y-auto px-6 pb-6 pt-0 sm:items-start sm:justify-center sm:p-10"
+              style={{
                 background: "var(--modal-backdrop)",
                 backdropFilter: "blur(20px)",
                 WebkitBackdropFilter: "blur(20px)",
@@ -3922,13 +3924,31 @@ export function Gallery3D({
               onClick={closeModal}
               role="presentation"
             >
+              <div
+                className="sticky top-0 z-30 -mx-6 mb-1 flex w-[calc(100%+3rem)] shrink-0 items-end justify-end bg-black px-7 pb-3 pt-[max(0.625rem,env(safe-area-inset-top))] sm:hidden"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  onClick={closeModal}
+                  className="shrink-0 rounded-full bg-card p-2.5 text-foreground transition-transform active:scale-95"
+                  style={{
+                    boxShadow:
+                      "0 4px 24px color-mix(in oklch, oklch(0.05 0.02 268) 55%, transparent)",
+                  }}
+                  aria-label={galleryCopy.close}
+                >
+                  <X className="h-5 w-5 text-muted-foreground" />
+                </button>
+              </div>
+
             <motion.div
               key="modal-card"
               initial={{ scale: 0.94, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.94, opacity: 0, y: 20 }}
               transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-              className="relative flex w-full max-w-3xl min-h-0 flex-col pb-4"
+              className="relative mx-auto flex w-full max-w-3xl min-h-0 flex-col pb-4 sm:mx-0"
               onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
             >
               <div className="min-h-0 w-full min-w-0 shrink-0">
@@ -4075,7 +4095,7 @@ export function Gallery3D({
               <button
                 type="button"
                 onClick={closeModal}
-                className="absolute top-2 left-full ml-2 shrink-0 rounded-full bg-card p-2.5 text-foreground transition-transform hover:scale-105 sm:ml-3"
+                className="absolute top-2 left-full ml-2 hidden shrink-0 rounded-full bg-card p-2.5 text-foreground transition-transform hover:scale-105 sm:ml-3 sm:inline-flex"
                 style={{
                   boxShadow:
                     "0 4px 24px color-mix(in oklch, oklch(0.05 0.02 268) 55%, transparent)",
