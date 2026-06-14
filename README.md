@@ -32,9 +32,9 @@ The concept, animations, and implementation are original and created by me.
 
 ## ©️ License
 
-© 2026 Yeşim Ceren Ünal
+© 2026
 
 This project, including its concept, visual design, animations,
-and implementation, is an original work created by Yeşim Ceren Ünal.
+and implementation, is an original work created by Yesim Ceren.
 
 Unauthorized reproduction or redistribution is prohibited.
