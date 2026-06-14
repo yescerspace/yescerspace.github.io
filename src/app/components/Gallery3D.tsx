@@ -3892,7 +3892,7 @@ export function Gallery3D({
         </div>
 
         <p
-          className="pointer-events-none w-full shrink-0 self-start pb-1 pt-2 text-left text-[length:var(--font-size)] font-medium italic leading-snug tracking-[0.12em] text-muted-foreground sm:pb-1.5"
+          className="pointer-events-none w-full shrink-0 self-start pb-1 pt-2 text-left text-[0.9375rem] font-medium italic leading-snug tracking-[0.12em] text-[#007FFF] sm:pb-1.5 sm:text-[1rem]"
           aria-live="polite"
         >
           {galleryCopy.exploreHint}

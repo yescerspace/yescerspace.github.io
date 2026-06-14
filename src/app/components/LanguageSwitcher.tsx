@@ -3,8 +3,16 @@ import {
   useCallback,
   type KeyboardEvent as ReactKeyboardEvent,
 } from "react";
-import { LOCALE_SWITCHER_ENTRIES, type Locale } from "../i18n/translations";
+import {
+  LOCALE_SWITCHER_ENTRIES,
+  type Locale,
+} from "../i18n/translations";
+import { ENABLED_SITE_LOCALES } from "../config/locales";
 import { useLanguage } from "../context/LanguageContext";
+
+const VISIBLE_LOCALE_SWITCHER_ENTRIES = LOCALE_SWITCHER_ENTRIES.filter(({ code }) =>
+  (ENABLED_SITE_LOCALES as readonly Locale[]).includes(code),
+);
 
 export function LanguageSwitcher() {
   const { locale, setLocale, messages } = useLanguage();
@@ -26,7 +34,7 @@ export function LanguageSwitcher() {
       className="notranslate flex shrink-0 items-center gap-x-2 text-[0.65rem] font-medium normal-case tracking-[0.14em] text-foreground sm:text-[0.68rem]"
       aria-label={messages.aria.languageSwitcher}
     >
-      {LOCALE_SWITCHER_ENTRIES.map(({ code, label }, index) => {
+      {VISIBLE_LOCALE_SWITCHER_ENTRIES.map(({ code, label, flag }, index) => {
         const active = locale === code;
         return (
           <Fragment key={code}>
@@ -51,13 +59,18 @@ export function LanguageSwitcher() {
               } `}
             >
               <span
-                className={
+                className={`inline-flex items-center gap-1 ${
                   active
                     ? "after:absolute after:left-0 after:right-0 after:top-full after:mt-0.5 after:h-px after:rounded-full after:bg-foreground/35 after:content-['']"
                     : undefined
-                }
+                }`}
               >
                 {label}
+                {flag ? (
+                  <span className="text-[0.92em] leading-none" aria-hidden>
+                    {flag}
+                  </span>
+                ) : null}
               </span>
             </span>
           </Fragment>

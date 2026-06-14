@@ -65,7 +65,7 @@ function ContactSocialRow({
       target="_blank"
       rel="noopener noreferrer"
       aria-label={ariaLabel}
-      className="group inline-flex w-fit max-w-full items-center gap-3.5 rounded-md transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+      className="group inline-flex w-fit items-center gap-2.5 rounded-md transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
       <img
         src={iconUrl}
@@ -84,7 +84,7 @@ function ContactSocialRow({
 }
 
 export function Contact() {
-  const { messages } = useLanguage();
+  const { messages, locale } = useLanguage();
   const c = messages.contact;
   const mailtoHref = `mailto:${encodeURIComponent(CONTACT_EMAIL)}`;
   const [emailCopied, setEmailCopied] = useState(false);
@@ -110,11 +110,11 @@ export function Contact() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-      className="max-w-3xl"
+      className="max-w-3xl pt-6 sm:pt-8"
     >
       <div className="space-y-8 leading-relaxed text-muted-foreground">
         <div className="space-y-6">
-          <p className="whitespace-pre-line text-base font-normal italic leading-relaxed text-muted-foreground">
+          <p className="whitespace-pre-line text-[0.9375rem] font-normal italic leading-relaxed text-[#007FFF] sm:text-[1rem]">
             {c.headline}
           </p>
           {c.description.trim() ? (
@@ -149,15 +149,16 @@ export function Contact() {
                 className={cn(
                   emailCopied ? emailCopyChipClass : emailCopyPrimaryClass,
                   emailCopied ? "cursor-default" : "cursor-pointer",
+                  locale === "de" && "w-auto min-w-[11rem] whitespace-nowrap",
                 )}
               >
                 {emailCopied ? c.emailCopiedFeedback : c.copyEmail}
               </button>
             </div>
 
-            <ul className="mt-8 flex flex-col items-start gap-4 sm:mt-10">
+            <ul className="mt-14 flex max-w-full flex-wrap items-center gap-x-6 gap-y-3 sm:mt-[4.5rem] sm:gap-x-8">
               {CONTACT_SOCIAL_LINKS.map((link) => (
-                <li key={link.id}>
+                <li key={link.id} className="shrink-0">
                   <ContactSocialRow
                     href={link.href}
                     iconUrl={SOCIAL_ICONS[link.iconKey]}

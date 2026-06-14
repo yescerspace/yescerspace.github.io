@@ -13,6 +13,31 @@ import { slugFromProjectKey } from "../utils/galleryProjectKey";
  */
 export type Locale = "en" | "de" | "tr";
 
+const ABOUT_PROFICIENCIES = [
+  "TouchDesigner",
+  "Blender 3D",
+  "Unity Engine",
+  "Substance Painter",
+  "Figma",
+  "After Effects",
+  "Premiere Pro",
+  "Photoshop",
+  "Illustrator",
+] as const;
+
+const ABOUT_SKILLS = [
+  "Vibe coding",
+  "Generative Systems",
+  "Real-time Rendering",
+  "VR Development",
+  "Video Editing",
+  "3D Modeling & Animation",
+  "Uv-mapping & Weight Painting",
+  "Character Rigging & Animation",
+  "Environment Design",
+  "Prop Design",
+] as const;
+
 /**
  * Header language switcher: fixed order and labels (never passed through UI translation).
  * Single tuple avoids lookup bugs; use {@link LOCALES} for locale codes only.
@@ -20,9 +45,10 @@ export type Locale = "en" | "de" | "tr";
 export const LOCALE_SWITCHER_ENTRIES: readonly {
   code: Locale;
   label: string;
+  flag?: string;
 }[] = [
-  { code: "en", label: "EN" },
-  { code: "de", label: "DE" },
+  { code: "en", label: "EN", flag: "🇬🇧" },
+  { code: "de", label: "DE", flag: "🇩🇪" },
   { code: "tr", label: "TR" },
 ];
 
@@ -119,6 +145,12 @@ export type TranslationMessages = {
     lead: string;
     p2: string;
     p3: string;
+    p4: string;
+    p5: string;
+    proficienciesTitle: string;
+    proficiencies: readonly string[];
+    skillsTitle: string;
+    skills: readonly string[];
   };
   contact: {
     headline: string;
@@ -196,8 +228,8 @@ const categoryEn: Record<GalleryCategory, string> = {
 
 const en: TranslationMessages = {
   layout: {
-    documentTitle: "YESIM CEREN Portfolio",
-    brandName: "YESIM CEREN",
+    documentTitle: "cerryhub Portfolio",
+    brandName: "cerryhub",
     cameraControl: "camera control",
     gestureControlOff: "Turn off gesture control",
   },
@@ -239,11 +271,19 @@ const en: TranslationMessages = {
   },
   about: {
     lead:
-      "Hi, I'm Ceren, a multidisciplinary designer working across 3D, motion, and interaction. I'm curious by nature, I enjoy learning, and I tend to constantly refine and evolve what I create rather than leaving things as they are.",
+      "Hi, I'm Ceren. I'm a Cologne-based creative technologist, motion designer, and 3D artist working across interactive media, real-time graphics, and digital experiences.",
     p2:
-      "My journey started with graphic design, where visuals were meant to stay static. But that didn't last long. I became more interested in what happens when design starts to move, react, and invite participation. Over time, this curiosity led me into game development, animation, immersive media, and interactive experiences, where I explored how rhythm, movement, and interaction shape the way people experience digital worlds.",
+      "I received my M.A. in 3D Animation for Film & Games from TH Köln in 2025, and my B.A. in Graphic Design from Bilkent University in 2019.",
     p3:
-      "Today, I'm particularly interested in creative technologies, audio-reactive visuals, and generative systems that blur the boundaries between design, motion, and code. I enjoy experimenting, learning new tools, and building experiences that feel alive. I'm currently focused on audio-reactive visuals, generative design, and real-time visual environments.",
+      "My journey started in graphic design, where visuals were meant to stay still. That didn't last very long.",
+    p4:
+      "I became fascinated by what happens when design starts to move, react, and invite participation. That curiosity gradually led me into animation, game development, immersive media, and interactive experiences, where I explored how motion, rhythm, and interaction shape the way people experience digital worlds.",
+    p5:
+      "Today, I focus on creative technology, audio-reactive visuals, generative systems, and real-time environments. I enjoy learning new tools, experimenting with visual systems, and building experiences that feel alive.",
+    proficienciesTitle: "Proficiencies:",
+    proficiencies: ABOUT_PROFICIENCIES,
+    skillsTitle: "Skills:",
+    skills: ABOUT_SKILLS,
   },
   contact: {
     headline:
@@ -275,8 +315,8 @@ const en: TranslationMessages = {
 
 const de: TranslationMessages = {
   layout: {
-    documentTitle: "YESIM CEREN Portfolio",
-    brandName: "YESIM CEREN",
+    documentTitle: "cerryhub Portfolio",
+    brandName: "cerryhub",
     cameraControl: "camera control",
     gestureControlOff: "Gestensteuerung ausschalten",
   },
@@ -324,11 +364,19 @@ const de: TranslationMessages = {
   },
   about: {
     lead:
-      "Hi, ich bin Ceren, eine multidisziplinäre Designerin, die in den Bereichen 3D, Motion und Interaktion arbeitet. Ich bin von Natur aus neugierig, lerne gerne dazu und versuche ständig, meine Arbeiten weiterzuentwickeln, anstatt sie unverändert zu lassen.",
+      "Hallo, ich bin Ceren. Ich bin Creative Technologist, Motion Designerin und 3D Artist aus Köln und arbeite mit interaktiven Medien, Echtzeitgrafiken und digitalen Erlebnissen.",
     p2:
-      "Meine Reise begann im Grafikdesign, wo Gestaltung eigentlich statisch bleiben sollte. Doch das hielt nicht lange an. Mich hat schnell interessiert, was passiert, wenn Design beginnt sich zu bewegen, zu reagieren und zur Interaktion einzuladen. Diese Neugier führte mich über die Zeit in die Spieleentwicklung, Animation, immersive Medien und interaktive Erlebnisse, wo ich erkundet habe, wie Rhythmus, Bewegung und Interaktion die Wahrnehmung digitaler Welten prägen.",
+      "2025 habe ich meinen Master of Arts in 3D Animation for Film & Games an der TH Köln abgeschlossen, meinen Bachelor in Grafikdesign habe ich 2019 an der Bilkent Universität gemacht.",
     p3:
-      "Heute interessiere ich mich besonders für kreative Technologien, audio-reactive Visuals und generative Systeme, die die Grenzen zwischen Design, Motion und Code verschwimmen lassen. Ich experimentiere gerne, lerne neue Tools und entwickle Erfahrungen, die sich lebendig anfühlen. Aktuell liegt mein Fokus auf audio-reactiven Visuals, generativem Design und Echtzeit-Visualumgebungen.",
+      "Meine Reise begann im Grafikdesign, in einer Welt, in der Bilder stillstehen sollten. Das hat jedoch nicht lange angehalten.",
+    p4:
+      "Ich wurde fasziniert davon, was passiert, wenn Design beginnt sich zu bewegen, zu reagieren und zur Interaktion einzuladen. Diese Neugier führte mich Schritt für Schritt in Richtung Animation, Game Development, immersive Medien und interaktive Erlebnisse, wo ich untersucht habe, wie Motion, Rhythmus und Interaktion die Art und Weise prägen, wie Menschen digitale Welten erleben.",
+    p5:
+      "Heute konzentriere ich mich auf Creative Technology, audio-reaktive Visuals, generative Systeme und Echtzeitumgebungen. Ich lerne gerne neue Tools, experimentiere mit visuellen Systemen und entwickle Erfahrungen, die sich lebendig anfühlen.",
+    proficienciesTitle: "Softwarekenntnisse:",
+    proficiencies: ABOUT_PROFICIENCIES,
+    skillsTitle: "Fachkompetenzen:",
+    skills: ABOUT_SKILLS,
   },
   contact: {
     headline:
@@ -360,8 +408,8 @@ const de: TranslationMessages = {
 
 const tr: TranslationMessages = {
   layout: {
-    documentTitle: "YESIM CEREN Portfolio",
-    brandName: "YESIM CEREN",
+    documentTitle: "cerryhub Portfolio",
+    brandName: "cerryhub",
     cameraControl: "camera control",
     gestureControlOff: "Jest kontrolünü kapat",
   },
@@ -414,6 +462,12 @@ const tr: TranslationMessages = {
       "Yolculuğum grafik tasarımla başladı; tasarımlarımın aslında statik kalması gerekliydi. Ama bu uzun sürmedi. Kısa sürede tasarımlarım hareket etmeye, tepki vermeye ve etkileşime davet etmeye başladı. Bu nedenle kariyerim beni oyun geliştirme, animasyon, immersive medya ve interaktif deneyimlere yönlendirdi. Bu alanlarda ritim, hareket ve etkileşimin insanların dijital dünyaları algılama biçimini nasıl şekillendirdiğini keşfettim.",
     p3:
       "Bugün özellikle creative technologies, audio-reactive görseller ve tasarım, motion ve code arasındaki sınırları bulanıklaştıran generatif sistemlerle ilgileniyorum. Deney yapmayı, yeni araçlar öğrenmeyi ve canlı hissettiren deneyimler üretmeyi seviyorum. Şu anda odak noktam audio-reactive görseller, generatif tasarım ve real-time görsel ortamlar.",
+    p4: "",
+    p5: "",
+    proficienciesTitle: "Proficiencies:",
+    proficiencies: ABOUT_PROFICIENCIES,
+    skillsTitle: "Skills:",
+    skills: ABOUT_SKILLS,
   },
   contact: {
     headline:

@@ -16,6 +16,10 @@ import {
   type Locale,
   type TranslationMessages,
 } from "../i18n/translations";
+import {
+  isEnabledSiteLocale,
+  resolveEnabledSiteLocale,
+} from "../config/locales";
 
 type LanguageContextValue = {
   locale: Locale;
@@ -25,12 +29,26 @@ type LanguageContextValue = {
 
 const LanguageContext = createContext<LanguageContextValue | null>(null);
 
+function readStoredSiteLocale(): Locale {
+  if (typeof window === "undefined") return defaultLocale;
+  try {
+    const stored =
+      window.localStorage.getItem(LOCALE_STORAGE_KEY) ??
+      window.localStorage.getItem(LEGACY_LOCALE_STORAGE_KEY);
+    if (isLocale(stored) && isEnabledSiteLocale(stored)) {
+      return stored;
+    }
+  } catch {
+    /* ignore */
+  }
+  return defaultLocale;
+}
+
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  /** Always start in English on full load — do not restore `portfolio-locale-v2` (user request). */
-  const [locale, setLocaleState] = useState<Locale>(() => defaultLocale);
+  const [locale, setLocaleState] = useState<Locale>(() => readStoredSiteLocale());
 
   const setLocale = useCallback((next: Locale) => {
-    if (!isLocale(next)) {
+    if (!isLocale(next) || !isEnabledSiteLocale(next)) {
       return;
     }
     setLocaleState(next);
@@ -43,7 +61,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!isLocale(locale)) {
+    if (!isLocale(locale) || !isEnabledSiteLocale(locale)) {
       setLocaleState(defaultLocale);
     }
   }, [locale]);
@@ -58,12 +76,16 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     document.documentElement.lang = "en";
     document.documentElement.setAttribute(
       "data-locale",
-      isLocale(locale) ? locale : defaultLocale,
+      isLocale(locale) && isEnabledSiteLocale(locale)
+        ? locale
+        : defaultLocale,
     );
   }, [locale]);
 
   const value = useMemo<LanguageContextValue>(() => {
-    const safeLocale = isLocale(locale) ? locale : defaultLocale;
+    const safeLocale = resolveEnabledSiteLocale(
+      isLocale(locale) ? locale : defaultLocale,
+    );
     return {
       locale: safeLocale,
       setLocale,

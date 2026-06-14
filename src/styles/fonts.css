@@ -1,5 +1,19 @@
 @import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&display=swap");
 
+@font-face {
+  font-family: "Golden Girdle";
+  src: url("/fonts/Golden-Girdle.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+.brand-title {
+  font-family: "Golden Girdle", "DM Sans", system-ui, sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
 body {
   font-family:
     "DM Sans",

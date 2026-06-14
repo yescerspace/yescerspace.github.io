@@ -43,7 +43,7 @@ function LayoutShell() {
             <Link
               to="/"
               lang="en"
-              className="inline-block text-[calc(0.75rem+1pt)] font-semibold tracking-[0.22em] text-foreground transition-opacity hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground sm:text-[calc(0.875rem+1pt)]"
+              className="brand-title inline-block text-[calc(1.25rem+1pt)] tracking-[0.22em] text-[#007FFF] transition-opacity hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#007FFF] sm:text-[calc(1.375rem+1pt)]"
             >
               {messages.layout.brandName}
             </Link>

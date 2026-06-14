@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * GitHub Pages deploy helper (yesimcerenunal.github.io).
+ * GitHub Pages deploy helper (yescerspace.github.io → yesimceren.com).
  * Build → stage index.html, 404.html, hashed bundle from index.html, src/ changes.
  *
  * Usage:
@@ -104,6 +104,12 @@ if (existsSync(deployScript)) {
 }
 if (existsSync(resolve(root, "gallery-halo-grey-ring.png"))) {
   run("git add gallery-halo-grey-ring.png");
+}
+if (existsSync(resolve(root, "fonts"))) {
+  run("git add fonts/");
+}
+if (existsSync(resolve(root, "public/fonts"))) {
+  run("git add public/fonts/");
 }
 
 const status = execSync("git status --porcelain", {
