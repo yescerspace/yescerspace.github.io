@@ -44,7 +44,7 @@ export function GalleryHandRotateBridge({
     if (Math.abs(smoothedAzimuthRef.current) > 0.0004) {
       controls.setAzimuthalAngle(
         controls.getAzimuthalAngle() +
-          smoothedAzimuthRef.current * delta * 2.1,
+          smoothedAzimuthRef.current * delta * 3.2,
       );
       changed = true;
     }
@@ -52,7 +52,7 @@ export function GalleryHandRotateBridge({
     if (Math.abs(smoothedPolarRef.current) > 0.0004) {
       const nextPolar = THREE.MathUtils.clamp(
         controls.getPolarAngle() +
-          smoothedPolarRef.current * delta * 1.75,
+          smoothedPolarRef.current * delta * 2.6,
         controls.minPolarAngle,
         controls.maxPolarAngle,
       );

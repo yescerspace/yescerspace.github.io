@@ -5,7 +5,11 @@
  * folder; keep assets only under `public/gallery/`.
  */
 export function publicAsset(path: string): string {
-  if (/^https?:\/\//i.test(path)) return path;
+  if (/^https?:\/\//i.test(path)) {
+    const m = path.match(/\/public\/(gallery\/[^/?#]+)/i);
+    if (m) return publicAsset(m[1]!);
+    return path;
+  }
   const p = path.startsWith("/") ? path.slice(1) : path;
   const base = import.meta.env.BASE_URL;
   if (!base || base === "/") return `/${p}`;

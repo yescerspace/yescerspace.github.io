@@ -50,16 +50,21 @@ export function GalleryHandModalEffect({
 }: GalleryHandModalEffectProps) {
   const hand = useGalleryHandControl();
   const lastFrameMsRef = useRef(0);
+  const lastClosePulseRef = useRef(false);
 
   useEffect(() => {
-    if (!hand?.enabled || !modalOpen) return;
+    if (!hand?.enabled || !modalOpen) {
+      lastClosePulseRef.current = false;
+      return;
+    }
 
     let raf = 0;
     const tick = (now: number) => {
       const sample = hand.sampleRef.current;
-      if (sample.closePulse) {
+      if (sample.closePulse && !lastClosePulseRef.current) {
         onCloseModal();
       }
+      lastClosePulseRef.current = sample.closePulse;
 
       const last = lastFrameMsRef.current || now;
       const dt = Math.min(0.05, (now - last) / 1000);

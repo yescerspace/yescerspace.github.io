@@ -33,7 +33,7 @@ export function detailVideoPosterUrl(videoUrl: string): string | null {
   const p = pathOnly(videoUrl);
   if (!isVideoUrl(p)) return null;
   if (/^https?:\/\//i.test(p)) {
-    const m = p.match(/\/gallery\/(\d+)\/(\d+)\.(mp4|webm)$/i);
+    const m = p.match(/\/(?:public\/)?gallery\/(\d+)\/(\d+)\.(mp4|webm)$/i);
     if (m) {
       return withGalleryAssetCacheBust(
         publicAsset(`gallery/${m[1]}/${m[2]}-.jpg`),

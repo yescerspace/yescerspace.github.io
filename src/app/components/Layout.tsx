@@ -3,7 +3,6 @@ import { Link, Outlet, useLocation } from "react-router";
 import { LanguageProvider, useLanguage } from "../context/LanguageContext";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { FooterNav } from "./FooterNav";
-import { CameraControlButton } from "./CameraControlButton";
 import { HandControlOverlay } from "./HandControlOverlay";
 import { GalleryHandControlProvider } from "./galleryHandControl";
 import { syncDocumentCanonical } from "../config/site";
@@ -48,7 +47,6 @@ function LayoutShell() {
             >
               {messages.layout.brandName}
             </Link>
-            {isGallery ? <CameraControlButton /> : null}
           </div>
           <div className="shrink-0">
             <LanguageSwitcher />

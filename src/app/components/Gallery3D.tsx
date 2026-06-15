@@ -76,6 +76,7 @@ import { GalleryHandPointerBridge } from "./GalleryHandPointerBridge";
 import { GalleryHandZoomBridge } from "./GalleryHandZoomBridge";
 import { GalleryOrbitWheelSmooth } from "./GalleryOrbitWheelSmooth";
 import { GalleryHandModalEffect } from "./GalleryHandModalEffect";
+import { GalleryHandControlButtons } from "./GalleryHandControlButtons";
 import { useGalleryHandControl } from "./galleryHandControl";
 import {
   DEFAULT_GALLERY_PARALLAX,
@@ -155,6 +156,46 @@ const WORK2_ARTSTATION_BUTTON_ENABLED = false;
 
 /** Initial playback level (0–1) when a clip loads; audience can change it with the player controls. */
 const DETAIL_VIDEO_VOLUME = 0.2;
+/** Tek kare/video çok uzun olmasın; kaydırırken aralıklı kolon hissi kalsın. */
+const DETAIL_MEDIA_MAX_HEIGHT_CLASS = "max-h-[min(50vh,420px)]";
+const DETAIL_MEDIA_SURFACE_CLASS = cn(
+  "mx-auto block h-auto w-full max-w-full object-contain",
+  DETAIL_MEDIA_MAX_HEIGHT_CLASS,
+);
+/** Dikey video referansı: 720×1280 → kolonda ~360×640. */
+const DETAIL_PORTRAIT_MEDIA_WIDTH_CLASS = "w-[min(100%,360px)]";
+const DETAIL_PORTRAIT_MEDIA_HEIGHT_CLASS = "max-h-[min(72vh,640px)]";
+const DETAIL_PORTRAIT_ASPECT_CLASS = "aspect-[720/1280]";
+
+type DetailMediaDims = { w: number; h: number };
+
+function isPortraitDetailMedia(dims: DetailMediaDims | undefined): boolean {
+  if (!dims || dims.w <= 0 || dims.h <= 0) return false;
+  return dims.h > dims.w * 1.02;
+}
+
+function detailLandscapeMediaClass(extra?: string): string {
+  return cn(DETAIL_MEDIA_SURFACE_CLASS, extra);
+}
+
+function detailPortraitMediaClass(extra?: string): string {
+  return cn(
+    "mx-auto block h-auto max-w-full object-contain",
+    DETAIL_PORTRAIT_MEDIA_WIDTH_CLASS,
+    DETAIL_PORTRAIT_MEDIA_HEIGHT_CLASS,
+    DETAIL_PORTRAIT_ASPECT_CLASS,
+    extra,
+  );
+}
+
+function detailMediaClass(
+  dims: DetailMediaDims | undefined,
+  extra?: string,
+): string {
+  return isPortraitDetailMedia(dims)
+    ? detailPortraitMediaClass(extra)
+    : detailLandscapeMediaClass(extra);
+}
 
 function pauseDetailVideoElement(v: HTMLVideoElement): void {
   delete v.dataset.detailPlayPending;
@@ -3193,6 +3234,9 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
   const detailUrls = useMemo(() => detailPageMediaUrls(urls), [urls]);
   const firstVideoUrl = useMemo(() => firstDetailVideoUrl(urls), [urls]);
   const [failed, setFailed] = useState<Record<string, boolean>>({});
+  const [mediaDims, setMediaDims] = useState<Record<string, DetailMediaDims>>(
+    {},
+  );
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const setScrollRef = useCallback(
     (node: HTMLDivElement | null) => {
@@ -3211,13 +3255,6 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
   const fullscreenVideoIndexRef = useRef<number | null>(null);
 
   const detailUrlsKey = useMemo(() => detailUrls.join("\0"), [detailUrls]);
-  const isSingleVideoDetail = useMemo(() => {
-    let n = 0;
-    for (const u of detailUrls) {
-      if (u && isVideoUrl(u)) n++;
-    }
-    return n === 1;
-  }, [detailUrls]);
   const heroUrl = useMemo(() => primaryGalleryTextureUrl(urls), [urls]);
   const heroSrc = useMemo(
     () => withGalleryAssetCacheBust(heroUrl),
@@ -3227,7 +3264,17 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
 
   useEffect(() => {
     setReadyUrls(new Set());
+    setMediaDims({});
   }, [detailUrlsKey]);
+
+  const rememberMediaDims = useCallback((url: string, w: number, h: number) => {
+    if (w <= 0 || h <= 0) return;
+    setMediaDims((prev) => {
+      const cur = prev[url];
+      if (cur?.w === w && cur?.h === h) return prev;
+      return { ...prev, [url]: { w, h } };
+    });
+  }, []);
 
   const markDetailMediaReady = useCallback((u: string) => {
     setReadyUrls((prev) => {
@@ -3245,6 +3292,11 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
       Object.keys(failed).sort().join("\0"),
     [readyUrls, failed],
   );
+
+  const detailMediaAllReady = useMemo(() => {
+    if (detailUrls.length === 0) return true;
+    return detailUrls.every((u) => failed[u] || readyUrls.has(u));
+  }, [detailUrls, failed, readyUrls]);
 
   const srcFor = useCallback(
     (url: string) =>
@@ -3391,15 +3443,21 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
     <div
       ref={setScrollRef}
       className={cn(
-        isSingleVideoDetail
-          ? "h-fit w-full min-w-0 overflow-hidden bg-transparent"
-          : "max-h-[min(70vh,580px)] w-full min-w-0 overflow-y-auto overscroll-y-auto bg-transparent [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar]:w-0",
-        !isSingleVideoDetail && className,
+        "max-h-[min(70vh,580px)] w-full min-w-0 overflow-y-auto overscroll-y-contain bg-app-shell-bg/35 [-ms-overflow-style:none] [-webkit-overflow-scrolling:touch] [scrollbar-width:none] [&::-webkit-scrollbar]:h-0 [&::-webkit-scrollbar]:w-0",
+        className,
       )}
       role="region"
       aria-label={heroAlt}
     >
-      <div className={cn("flex w-full flex-col", isSingleVideoDetail ? "" : "gap-8")}>
+      <div
+        className={cn(
+          "flex w-full flex-col gap-8 py-1 transition-opacity duration-300 ease-out motion-reduce:transition-none",
+          detailMediaAllReady
+            ? "opacity-100"
+            : "pointer-events-none opacity-0",
+        )}
+        aria-busy={!detailMediaAllReady}
+      >
         {detailUrls.map((url, i) => {
           const src = failed[url]
             ? fallbackImageUrl()
@@ -3411,6 +3469,8 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
           const isPrimaryDetailVideo =
             showVideo && firstVideoUrl != null && url === firstVideoUrl;
           const videoPoster = showVideo ? detailVideoPosterUrl(url) : null;
+          const dims = mediaDims[url];
+          const portraitMedia = isPortraitDetailMedia(dims);
           return (
             <div
               key={`${url}-${i}`}
@@ -3418,8 +3478,8 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
                 itemRefs.current[i] = el;
               }}
               className={cn(
-                "w-full shrink-0",
-                !isSingleVideoDetail && "min-h-[4rem]",
+                "flex w-full min-h-[4rem] shrink-0 items-center justify-center",
+                portraitMedia && "px-1",
               )}
             >
               {showVideo ? (
@@ -3438,9 +3498,11 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
                     : ({
                         fetchPriority: "low",
                       } as VideoHTMLAttributes<HTMLVideoElement>))}
-                  className="block h-auto max-w-full w-full bg-black"
+                  className={detailMediaClass(dims, "bg-black/20")}
                   aria-label={label}
-                  onLoadedMetadata={() => {
+                  onLoadedMetadata={(e) => {
+                    const v = e.currentTarget;
+                    rememberMediaDims(url, v.videoWidth, v.videoHeight);
                     markDetailMediaReady(url);
                     schedulePlaybackSync();
                   }}
@@ -3475,12 +3537,14 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
                 <img
                   src={src}
                   alt={label}
-                  className="block h-auto max-w-full w-full select-none bg-black/10"
+                  className={detailMediaClass(dims, "select-none bg-black/10")}
                         draggable={false}
                   loading={i <= 1 ? "eager" : "lazy"}
                   decoding="async"
                   fetchPriority={i === 0 ? "high" : i === 1 ? "high" : "low"}
-                  onLoad={() => {
+                  onLoad={(e) => {
+                    const img = e.currentTarget;
+                    rememberMediaDims(url, img.naturalWidth, img.naturalHeight);
                     markDetailMediaReady(url);
                   }}
                   onError={() => {
@@ -3895,12 +3959,15 @@ export function Gallery3D({
           </GalleryParallaxContext.Provider>
         </div>
 
-        <p
-          className="pointer-events-none w-full shrink-0 self-start pb-1 pt-2 text-left text-[0.9375rem] font-medium italic leading-snug tracking-[0.12em] text-[#007FFF] sm:pb-1.5 sm:text-[1rem]"
-          aria-live="polite"
-        >
-          {galleryCopy.exploreHint}
-        </p>
+        <div className="flex w-full shrink-0 flex-col items-start gap-3.5 self-start pb-1 pt-1 sm:gap-4 sm:pb-1.5">
+          <GalleryHandControlButtons />
+          <p
+            className="pointer-events-none text-left text-[0.9375rem] font-medium italic leading-snug tracking-[0.12em] text-[#007FFF] sm:text-[1rem]"
+            aria-live="polite"
+          >
+            {galleryCopy.exploreHint}
+          </p>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -3948,10 +4015,10 @@ export function Gallery3D({
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.94, opacity: 0, y: 20 }}
               transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-              className="relative mx-auto flex w-full max-w-3xl min-h-0 flex-col pb-4 sm:mx-0"
+              className="relative mx-auto my-auto flex w-full max-w-6xl min-h-0 flex-col gap-10 pb-4 sm:mx-0 lg:grid lg:grid-cols-[minmax(0,560px)_minmax(0,28rem)] lg:items-stretch lg:gap-x-14"
               onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
             >
-              <div className="min-h-0 w-full min-w-0 shrink-0">
+              <div className="min-h-0 w-full min-w-0 shrink-0 bg-app-shell-bg lg:col-start-1 lg:row-start-1 lg:relative lg:max-w-none lg:self-stretch lg:min-h-[min(70vh,580px)]">
                 <ProjectImageScroll
                   ref={detailModalScrollRef}
                   outerScrollRef={modalDetailWheelRootRef}
@@ -3959,13 +4026,7 @@ export function Gallery3D({
                   key={`${selectedImage.projectKey}|${selectedImage.images.join("|")}`}
                   urls={selectedImage.images}
                   heroAlt={selectedPortfolioCopy.title}
-                  className={
-                    detailPageMediaUrls(selectedImage.images).filter((u) =>
-                      isVideoUrl(u),
-                    ).length === 1
-                      ? undefined
-                      : "max-h-[min(70vh,580px)]"
-                  }
+                  className="min-h-[min(70vh,580px)] max-h-[min(70vh,580px)] lg:absolute lg:inset-0 lg:h-full lg:min-h-0 lg:max-h-none"
                 />
               </div>
 
@@ -3977,11 +4038,11 @@ export function Gallery3D({
                   duration: 0.4,
                   ease: [0.25, 0.46, 0.45, 0.94],
                 }}
-                className="min-h-0 w-full"
+                className="min-h-0 w-full min-w-0 lg:col-start-2 lg:row-start-1 lg:max-w-none"
               >
                 <div
                   ref={detailInfoRef}
-                  className="flex min-h-0 w-full flex-col gap-10 justify-start pt-8 sm:pt-10"
+                  className="flex min-h-0 w-full flex-col gap-10 justify-start"
                 >
                 <div>
                   <p className="mb-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">

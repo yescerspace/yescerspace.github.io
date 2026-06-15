@@ -6,6 +6,7 @@ export type HandGestureKind =
   | "openPalm"
   | "indexUp"
   | "okSign"
+  | "pinch"
   | "palmDown";
 
 export type ClassifiedHand = {
@@ -26,6 +27,7 @@ export const OPEN_PALM_HIGHLIGHT_LANDMARKS = [0, 4, 8, 12, 16, 20] as const;
 export const FIST_HIGHLIGHT_LANDMARKS = [0, 5, 9, 13, 17] as const;
 export const INDEX_HIGHLIGHT_LANDMARKS = [6, 7, 8] as const;
 export const OK_SIGN_HIGHLIGHT_LANDMARKS = [3, 4, 8] as const;
+export const PINCH_HIGHLIGHT_LANDMARKS = [3, 4, 6, 7, 8] as const;
 export const PALM_DOWN_HIGHLIGHT_LANDMARKS = [0, 5, 9, 13, 17] as const;
 
 export const HAND_CONNECTIONS: ReadonlyArray<readonly [number, number]> = [
@@ -93,15 +95,31 @@ function mirrorX(x: number): number {
   return 1 - x;
 }
 
+export { mirrorX };
+
 /** Selfie kamerada: düşük x = kullanıcının sağ eli. */
 export function isUserRightHand(landmarks: NormalizedLandmark[]): boolean {
   const { x } = palmCenter(landmarks);
   return x < 0.5;
 }
 
-/** ✊ Yumruk */
+/** ✊ Yumruk — 👌/☝️ ile çakışmasın (OK işaretinde 2 parmak açık kalır). */
 export function isFistGesture(landmarks: NormalizedLandmark[]): boolean {
+  if (isOkSignGesture(landmarks) || isIndexUpGesture(landmarks)) return false;
   return countExtendedFingers(landmarks) <= 2;
+}
+
+/** ✊ Detay kapat — gevşek yumruktan daha sıkı (kaydırırken yanlış kapanmasın). */
+export function isStrictFistGesture(landmarks: NormalizedLandmark[]): boolean {
+  if (isOkSignGesture(landmarks) || isIndexUpGesture(landmarks)) return false;
+  return countExtendedFingers(landmarks) <= 1;
+}
+
+/** 🖐️ Detay kaydırma avucu — 3+ parmak yeterli (MediaPipe bazen bir parmak kaçırır). */
+export function isScrollOpenPalm(landmarks: NormalizedLandmark[]): boolean {
+  if (isOkSignGesture(landmarks) || isIndexUpGesture(landmarks)) return false;
+  if (isStrictFistGesture(landmarks)) return false;
+  return countExtendedFingers(landmarks) >= 3;
 }
 
 /** 🖐️ Beş parmak açık (4+ yeterli — MediaPipe bazen bir parmak kaçırır). */
@@ -136,6 +154,15 @@ export function isOkSignGesture(landmarks: NormalizedLandmark[]): boolean {
   }
   const extended = countExtendedFingers(landmarks);
   return extended >= 2 && extended <= 4;
+}
+
+/** 🤏 Pinch (ayrı; seçimde kullanılmıyor). */
+export function isPinchGesture(landmarks: NormalizedLandmark[]): boolean {
+  if (isIndexUpGesture(landmarks) || isOkSignGesture(landmarks)) return false;
+  const span = palmSpan(landmarks);
+  const tipDist = dist(landmarks[4], landmarks[8]);
+  if (tipDist > span * 0.4 || tipDist < span * 0.06) return false;
+  return fingerExtended(landmarks, 8, 6) || fingerExtended(landmarks, 4, 3);
 }
 
 /** 🖐️ Beş parmak açık — galeri ↕️ döndür / detay ↕️ kaydır. */

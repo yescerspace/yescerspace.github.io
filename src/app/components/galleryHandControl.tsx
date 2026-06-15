@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from "react";
 import type { ClassifiedHand } from "../utils/handGestures";
+import type { HandGestureState } from "../utils/handGestureEventBus";
 
 export type HandedLabel = "left" | "right";
 export type HandPoint = { x: number; y: number };
@@ -30,6 +31,8 @@ export type HandControlMode = "free" | "pointer" | "rotate" | "detail";
 
 export type GalleryHandSample = {
   handDetected: boolean;
+  /** State machine çıktısı (IDLE | ROTATE_MODE | …) */
+  gestureState: HandGestureState;
   mode: HandControlMode;
   userLeft: PhysicalHandState;
   userRight: PhysicalHandState;
@@ -74,6 +77,7 @@ const EMPTY_HAND: PhysicalHandState = {
 
 const EMPTY_SAMPLE: GalleryHandSample = {
   handDetected: false,
+  gestureState: "IDLE",
   mode: "free",
   userLeft: { ...EMPTY_HAND },
   userRight: { ...EMPTY_HAND },
@@ -174,7 +178,7 @@ export function useGalleryHandControl(): GalleryHandControlContextValue | null {
 }
 
 /** 👋 dönüş yumuşatma */
-export const HAND_ROTATE_SMOOTH = 0.14;
+export const HAND_ROTATE_SMOOTH = 0.22;
 /** Orbit zoom animasyonu yumuşatma */
 export const HAND_ZOOM_ANIM_SMOOTH = 0.045;
 export const HAND_GESTURE_PULSE_COOLDOWN_MS = 550;
@@ -186,6 +190,7 @@ export function resetGalleryHandSample(
     ...EMPTY_SAMPLE,
     userLeft: { ...EMPTY_HAND },
     userRight: { ...EMPTY_HAND },
+    gestureState: "IDLE",
   };
 }
 
@@ -231,4 +236,25 @@ export function resetGalleryHandControlState(
   hand.setTrackingReady(false);
   hand.setTrackingError(null);
   resetGalleryHandSample(hand.sampleRef);
+}
+
+/** Kamera kontrolünü aç/kapat — tıklama anında çağrılmalı (izin jesti). */
+export function toggleGalleryCameraControl(
+  hand: GalleryHandControlContextValue,
+): void {
+  if (hand.enabled) {
+    resetGalleryHandControlState(hand);
+    return;
+  }
+  hand.setTrackingError(null);
+  hand.setTrackingReady(false);
+  requestGalleryCameraStream(hand).catch((err) => {
+    hand.setTrackingError(
+      err instanceof Error ? err.message : "Camera permission failed",
+    );
+    hand.setHintOpen(false);
+    hand.setEnabled(false);
+  });
+  hand.setHintOpen(true);
+  hand.setEnabled(true);
 }

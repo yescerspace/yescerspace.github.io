@@ -92,6 +92,11 @@ export type PortfolioProjectCopy = {
   category?: string;
 };
 
+export type HandGestureRuleItem = {
+  emoji: string;
+  text: string;
+};
+
 export type TranslationMessages = {
   /** Shell: document title, header brand, optional non-route UI. */
   layout: {
@@ -102,6 +107,12 @@ export type TranslationMessages = {
     cameraControlOn: string;
     handGestureAwaitPalm: string;
     handGestureArmedHint: string;
+    handGestureRulesBookAria: string;
+    handGestureRulesDialogAria: string;
+    handGestureRulesGalleryTitle: string;
+    handGestureRulesDetailTitle: string;
+    handGestureRulesGallery: readonly HandGestureRuleItem[];
+    handGestureRulesDetail: readonly HandGestureRuleItem[];
     handModeFree: string;
     handModePointer: string;
     handModeRotate: string;
@@ -128,6 +139,8 @@ export type TranslationMessages = {
   categories: CategoryMessages;
   gallery: {
     exploreHint: string;
+    switchToCamera: string;
+    switchToCameraOff: string;
     modalYear: string;
     /** Label above the tools line in the project detail modal (shown with a trailing colon in UI). */
     modalToolsLabel: string;
@@ -242,7 +255,22 @@ const en: TranslationMessages = {
     handGestureAwaitPalm:
       "🖐️ Five fingers splayed, hand raised — start position.",
     handGestureArmedHint:
-      "🖐️ up: start · 🖐️ ↔️↕️: steer (center=stop) · ✊: zoom out · 🖐️ hold center: zoom in · ☝️: point · 👌: pick · detail 🖐️ ↕️: scroll · ✊: close",
+      "🖐️ up: reset · 🖐️ ↔️↕️: steer (center=stop) · ✊: zoom in · ☝️: point · 👌: pick · detail 🖐️ ↕️: scroll · ✊: close",
+    handGestureRulesBookAria: "Show hand gesture rules",
+    handGestureRulesDialogAria: "Hand gesture rules",
+    handGestureRulesGalleryTitle: "Gallery",
+    handGestureRulesDetailTitle: "Project view",
+    handGestureRulesGallery: [
+      { emoji: "🖐️", text: "Move ↔️ ↕️ to steer · center = stop" },
+      { emoji: "☝️", text: "Point at a planet" },
+      { emoji: "👌", text: "Pick and open a project" },
+      { emoji: "✊", text: "Zoom in" },
+      { emoji: "🖐️", text: "Raised open palm · reset view" },
+    ],
+    handGestureRulesDetail: [
+      { emoji: "🖐️", text: "Move ↕️ to scroll the page" },
+      { emoji: "✊", text: "Close project (hold briefly)" },
+    ],
     handModeFree: "waiting",
     handModePointer: "pointer",
     handModeRotate: "rotate",
@@ -272,6 +300,8 @@ const en: TranslationMessages = {
   },
   gallery: {
     exploreHint: "Drag, scroll.. You're in control!",
+    switchToCamera: "Enter Hands Mode!",
+    switchToCameraOff: "Camera Off",
     modalYear: "Year",
     modalToolsLabel: "Tools",
     modalProjectFallback: "Project",
@@ -338,7 +368,22 @@ const de: TranslationMessages = {
     handGestureAwaitPalm:
       "🖐️ Fünf Finger gespreizt, Hand oben — Startposition.",
     handGestureArmedHint:
-      "🖐️ hoch: Start · 🖐️ ↔️↕️: steuern (Mitte=Stopp) · ✊: raus · 🖐️ Mitte halten: rein · ☝️: zeigen · 👌: wählen · Detail 🖐️ ↕️: scrollen · ✊: schließen",
+      "🖐️ hoch: Reset · 🖐️ ↔️↕️: steuern (Mitte=Stopp) · ✊: rein · ☝️: zeigen · 👌: wählen · Detail 🖐️ ↕️: scrollen · ✊: schließen",
+    handGestureRulesBookAria: "Handgesten-Regeln anzeigen",
+    handGestureRulesDialogAria: "Handgesten-Regeln",
+    handGestureRulesGalleryTitle: "Galerie",
+    handGestureRulesDetailTitle: "Projektansicht",
+    handGestureRulesGallery: [
+      { emoji: "🖐️", text: "↔️ ↕️ bewegen zum Steuern · Mitte = Stopp" },
+      { emoji: "☝️", text: "Auf einen Planeten zeigen" },
+      { emoji: "👌", text: "Projekt wählen und öffnen" },
+      { emoji: "✊", text: "Heranzoomen" },
+      { emoji: "🖐️", text: "Offene Hand oben · Ansicht zurücksetzen" },
+    ],
+    handGestureRulesDetail: [
+      { emoji: "🖐️", text: "↕️ bewegen zum Scrollen" },
+      { emoji: "✊", text: "Projekt schließen (kurz halten)" },
+    ],
     handModeFree: "warten",
     handModePointer: "zeiger",
     handModeRotate: "drehen",
@@ -374,6 +419,8 @@ const de: TranslationMessages = {
   },
   gallery: {
     exploreHint: "Scrollen, ziehen… deine Kontrolle, einfach volle!",
+    switchToCamera: "Handmodus Aktivieren!",
+    switchToCameraOff: "Kamera Stopp",
     modalYear: "Jahr",
     modalToolsLabel: "Tools",
     modalProjectFallback: "Projekt",
@@ -440,7 +487,22 @@ const tr: TranslationMessages = {
     handGestureAwaitPalm:
       "🖐️ Beş parmak açık, el yukarıda — başlangıç pozisyonu.",
     handGestureArmedHint:
-      "🖐️ yukarı: başlangıç · 🖐️ ↔️↕️: yönlendir (orta=dur) · ✊: uzaklaş · 🖐️ ortada sabit: yakınlaş · ☝️: işaret · 👌: seç · detay 🖐️ ↕️: kaydır · ✊: kapat",
+      "🖐️ yukarı: sıfırla · 🖐️ ↔️↕️: yönlendir (orta=dur) · ✊: yakınlaş · ☝️: işaret · 👌: seç · detay 🖐️ ↕️: kaydır · ✊: kapat",
+    handGestureRulesBookAria: "El jesti kurallarını göster",
+    handGestureRulesDialogAria: "El jesti kuralları",
+    handGestureRulesGalleryTitle: "Galeri",
+    handGestureRulesDetailTitle: "Proje görünümü",
+    handGestureRulesGallery: [
+      { emoji: "🖐️", text: "↔️ ↕️ hareket · yönlendir · orta = dur" },
+      { emoji: "☝️", text: "Bir gezegeni işaret et" },
+      { emoji: "👌", text: "Proje seç ve aç" },
+      { emoji: "✊", text: "Yakınlaş" },
+      { emoji: "🖐️", text: "Açık el yukarıda · görünümü sıfırla" },
+    ],
+    handGestureRulesDetail: [
+      { emoji: "🖐️", text: "↕️ hareket · sayfayı kaydır" },
+      { emoji: "✊", text: "Projeyi kapat (kısa tut)" },
+    ],
     handModeFree: "bekleme",
     handModePointer: "imleç",
     handModeRotate: "döndür",
@@ -476,6 +538,8 @@ const tr: TranslationMessages = {
   },
   gallery: {
     exploreHint: "Kaydır, sürükle.. kontrol sende!",
+    switchToCamera: "Eller Havaya!",
+    switchToCameraOff: "Kamerayı Kapat",
     modalYear: "Yıl",
     modalToolsLabel: "Araçlar",
     modalProjectFallback: "Proje",

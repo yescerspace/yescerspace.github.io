@@ -23,8 +23,7 @@ type GalleryHandZoomBridgeProps = {
 };
 
 /**
- * ✊ → zoom out
- * 🖐️ sabit → zoom in
+ * ✊ → zoom in (yakınlaş)
  * 🖐️ yukarı → başlangıç kadrajı
  */
 export function GalleryHandZoomBridge({
@@ -63,12 +62,6 @@ export function GalleryHandZoomBridge({
 
     if (s.fistHeld) {
       targetRef.current = {
-        distance: maxDistance,
-        azimuth: controls.getAzimuthalAngle(),
-        polar: controls.getPolarAngle(),
-      };
-    } else if (s.openPalmHeld) {
-      targetRef.current = {
         distance: zoomInTarget,
         azimuth: controls.getAzimuthalAngle(),
         polar: controls.getPolarAngle(),
@@ -76,13 +69,6 @@ export function GalleryHandZoomBridge({
     } else if (s.zoomInPulse && now - lastPulseMsRef.current > 350) {
       targetRef.current = {
         distance: zoomInTarget,
-        azimuth: controls.getAzimuthalAngle(),
-        polar: controls.getPolarAngle(),
-      };
-      lastPulseMsRef.current = now;
-    } else if (s.zoomOutPulse && now - lastPulseMsRef.current > 350) {
-      targetRef.current = {
-        distance: maxDistance,
         azimuth: controls.getAzimuthalAngle(),
         polar: controls.getPolarAngle(),
       };
@@ -108,7 +94,7 @@ export function GalleryHandZoomBridge({
     const curAz = controls.getAzimuthalAngle();
     const curPol = controls.getPolarAngle();
 
-    const held = s.fistHeld || s.openPalmHeld;
+    const held = s.fistHeld;
     const smooth = held ? HAND_ZOOM_ANIM_SMOOTH * 1.3 : HAND_ZOOM_ANIM_SMOOTH;
     const nextDist = THREE.MathUtils.lerp(curDist, target.distance, smooth);
     const nextAz = THREE.MathUtils.lerp(curAz, target.azimuth, smooth);
