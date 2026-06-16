@@ -93,8 +93,9 @@ export type PortfolioProjectCopy = {
 };
 
 export type HandGestureRuleItem = {
-  emoji: string;
-  text: string;
+  emojis: readonly string[];
+  label: string;
+  imageKey?: "swipePage" | "escKey";
 };
 
 export type TranslationMessages = {
@@ -109,10 +110,9 @@ export type TranslationMessages = {
     handGestureArmedHint: string;
     handGestureRulesBookAria: string;
     handGestureRulesDialogAria: string;
-    handGestureRulesGalleryTitle: string;
-    handGestureRulesDetailTitle: string;
-    handGestureRulesGallery: readonly HandGestureRuleItem[];
-    handGestureRulesDetail: readonly HandGestureRuleItem[];
+    handGestureRulesBookTitle: string;
+    handGestureRules: readonly HandGestureRuleItem[];
+    handGestureRulesStart: string;
     handModeFree: string;
     handModePointer: string;
     handModeRotate: string;
@@ -252,25 +252,26 @@ const en: TranslationMessages = {
     brandName: "cerryhub",
     cameraControl: "camera control",
     cameraControlOn: "camera control on",
-    handGestureAwaitPalm:
-      "🖐️ Five fingers splayed, hand raised — start position.",
+    handGestureAwaitPalm: "🎉 Hands Mode Activated! 🎉",
     handGestureArmedHint:
-      "🖐️ up: reset · 🖐️ ↔️↕️: steer (center=stop) · ✊: zoom in · ☝️: point · 👌: pick · detail 🖐️ ↕️: scroll · ✊: close",
+      "🖐️ up: reset · 🖐️ ↔️↕️: steer (center=stop) · ☝️: point · 👌: pick · detail 🖐️ ↕️: scroll · ✊: close",
     handGestureRulesBookAria: "Show hand gesture rules",
     handGestureRulesDialogAria: "Hand gesture rules",
-    handGestureRulesGalleryTitle: "Gallery",
-    handGestureRulesDetailTitle: "Project view",
-    handGestureRulesGallery: [
-      { emoji: "🖐️", text: "Move ↔️ ↕️ to steer · center = stop" },
-      { emoji: "☝️", text: "Point at a planet" },
-      { emoji: "👌", text: "Pick and open a project" },
-      { emoji: "✊", text: "Zoom in" },
-      { emoji: "🖐️", text: "Raised open palm · reset view" },
+    handGestureRulesBookTitle: "RULE BOOK",
+    handGestureRules: [
+      { emojis: ["🖐️"], label: "Start position" },
+      { emojis: ["✋", "↔️"], label: "Travel" },
+      { emojis: ["☝️"], label: "Choose" },
+      { emojis: ["👌"], label: "Click (thumb + index)" },
+      { emojis: ["✊"], label: "Close" },
+      {
+        emojis: ["↔️"],
+        imageKey: "swipePage",
+        label: "Change the page",
+      },
+      { emojis: [], imageKey: "escKey", label: "Camera Off" },
     ],
-    handGestureRulesDetail: [
-      { emoji: "🖐️", text: "Move ↕️ to scroll the page" },
-      { emoji: "✊", text: "Close project (hold briefly)" },
-    ],
+    handGestureRulesStart: "Start",
     handModeFree: "waiting",
     handModePointer: "pointer",
     handModeRotate: "rotate",
@@ -365,25 +366,26 @@ const de: TranslationMessages = {
     brandName: "cerryhub",
     cameraControl: "camera control",
     cameraControlOn: "camera control on",
-    handGestureAwaitPalm:
-      "🖐️ Fünf Finger gespreizt, Hand oben — Startposition.",
+    handGestureAwaitPalm: "🎉 Hands Mode aktiviert! 🎉",
     handGestureArmedHint:
-      "🖐️ hoch: Reset · 🖐️ ↔️↕️: steuern (Mitte=Stopp) · ✊: rein · ☝️: zeigen · 👌: wählen · Detail 🖐️ ↕️: scrollen · ✊: schließen",
+      "🖐️ hoch: Reset · 🖐️ ↔️↕️: steuern (Mitte=Stopp) · ☝️: zeigen · 👌: wählen · Detail 🖐️ ↕️: scrollen · ✊: schließen",
     handGestureRulesBookAria: "Handgesten-Regeln anzeigen",
     handGestureRulesDialogAria: "Handgesten-Regeln",
-    handGestureRulesGalleryTitle: "Galerie",
-    handGestureRulesDetailTitle: "Projektansicht",
-    handGestureRulesGallery: [
-      { emoji: "🖐️", text: "↔️ ↕️ bewegen zum Steuern · Mitte = Stopp" },
-      { emoji: "☝️", text: "Auf einen Planeten zeigen" },
-      { emoji: "👌", text: "Projekt wählen und öffnen" },
-      { emoji: "✊", text: "Heranzoomen" },
-      { emoji: "🖐️", text: "Offene Hand oben · Ansicht zurücksetzen" },
+    handGestureRulesBookTitle: "REGELBUCH",
+    handGestureRules: [
+      { emojis: ["🖐️"], label: "Startposition" },
+      { emojis: ["✋", "↔️"], label: "Steuern" },
+      { emojis: ["☝️"], label: "Auswählen" },
+      { emojis: ["👌"], label: "Klicken (Daumen + Zeigefinger)" },
+      { emojis: ["✊"], label: "Schließen" },
+      {
+        emojis: ["↔️"],
+        imageKey: "swipePage",
+        label: "Seite wechseln",
+      },
+      { emojis: [], imageKey: "escKey", label: "Kamera aus" },
     ],
-    handGestureRulesDetail: [
-      { emoji: "🖐️", text: "↕️ bewegen zum Scrollen" },
-      { emoji: "✊", text: "Projekt schließen (kurz halten)" },
-    ],
+    handGestureRulesStart: "Start",
     handModeFree: "warten",
     handModePointer: "zeiger",
     handModeRotate: "drehen",
@@ -484,25 +486,26 @@ const tr: TranslationMessages = {
     brandName: "cerryhub",
     cameraControl: "camera control",
     cameraControlOn: "camera control on",
-    handGestureAwaitPalm:
-      "🖐️ Beş parmak açık, el yukarıda — başlangıç pozisyonu.",
+    handGestureAwaitPalm: "🎉 Hands Mode Aktif! 🎉",
     handGestureArmedHint:
-      "🖐️ yukarı: sıfırla · 🖐️ ↔️↕️: yönlendir (orta=dur) · ✊: yakınlaş · ☝️: işaret · 👌: seç · detay 🖐️ ↕️: kaydır · ✊: kapat",
+      "🖐️ yukarı: sıfırla · 🖐️ ↔️↕️: yönlendir (orta=dur) · ☝️: işaret · 👌: seç · detay 🖐️ ↕️: kaydır · ✊: kapat",
     handGestureRulesBookAria: "El jesti kurallarını göster",
     handGestureRulesDialogAria: "El jesti kuralları",
-    handGestureRulesGalleryTitle: "Galeri",
-    handGestureRulesDetailTitle: "Proje görünümü",
-    handGestureRulesGallery: [
-      { emoji: "🖐️", text: "↔️ ↕️ hareket · yönlendir · orta = dur" },
-      { emoji: "☝️", text: "Bir gezegeni işaret et" },
-      { emoji: "👌", text: "Proje seç ve aç" },
-      { emoji: "✊", text: "Yakınlaş" },
-      { emoji: "🖐️", text: "Açık el yukarıda · görünümü sıfırla" },
+    handGestureRulesBookTitle: "KURAL KİTABI",
+    handGestureRules: [
+      { emojis: ["🖐️"], label: "Başlangıç pozisyonu" },
+      { emojis: ["✋", "↔️"], label: "Gezin" },
+      { emojis: ["☝️"], label: "Seç" },
+      { emojis: ["👌"], label: "Tıkla (başparmak + işaret)" },
+      { emojis: ["✊"], label: "Kapat" },
+      {
+        emojis: ["↔️"],
+        imageKey: "swipePage",
+        label: "Sayfa değiştir",
+      },
+      { emojis: [], imageKey: "escKey", label: "Kamerayı kapat" },
     ],
-    handGestureRulesDetail: [
-      { emoji: "🖐️", text: "↕️ hareket · sayfayı kaydır" },
-      { emoji: "✊", text: "Projeyi kapat (kısa tut)" },
-    ],
+    handGestureRulesStart: "Başla",
     handModeFree: "bekleme",
     handModePointer: "imleç",
     handModeRotate: "döndür",

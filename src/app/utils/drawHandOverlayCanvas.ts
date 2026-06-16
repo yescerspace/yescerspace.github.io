@@ -5,6 +5,23 @@ function mirrorX(x: number): number {
   return 1 - x;
 }
 
+/** Beyaz merkez + yeşil halka — işaret / başparmak ucu imleci. */
+function drawFingerAimCursor(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+): void {
+  ctx.beginPath();
+  ctx.arc(x, y, 9, 0, Math.PI * 2);
+  ctx.strokeStyle = "rgba(74, 222, 128, 0.95)";
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x, y, 3.5, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(255,255,255,0.95)";
+  ctx.fill();
+}
+
 /** Selfie preview üzerinde yeşil iskelet + kırmızı vurgu noktaları. */
 export function drawHandOverlayCanvas(
   canvas: HTMLCanvasElement,
@@ -63,19 +80,30 @@ export function drawHandOverlayCanvas(
     }
 
     if (highlightSet.has(8)) {
-      const tip = pts[8];
-      if (tip) {
-        const x = mirrorX(tip.x) * w;
-        const y = tip.y * h;
-        ctx.beginPath();
-        ctx.arc(x, y, 9, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(74, 222, 128, 0.95)";
-        ctx.lineWidth = 2.5;
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(x, y, 3.5, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(255,255,255,0.95)";
-        ctx.fill();
+      const indexTip = pts[8];
+      if (indexTip) {
+        drawFingerAimCursor(
+          ctx,
+          mirrorX(indexTip.x) * w,
+          indexTip.y * h,
+        );
+      }
+      const thumbTip = pts[4];
+      if (thumbTip) {
+        drawFingerAimCursor(
+          ctx,
+          mirrorX(thumbTip.x) * w,
+          thumbTip.y * h,
+        );
+      }
+    } else if (highlightSet.has(4)) {
+      const thumbTip = pts[4];
+      if (thumbTip) {
+        drawFingerAimCursor(
+          ctx,
+          mirrorX(thumbTip.x) * w,
+          thumbTip.y * h,
+        );
       }
     }
   }

@@ -79,7 +79,7 @@ export function GalleryHandCameraPreview({
         }}
         className={cn(
           "block w-full object-cover [transform:scaleX(-1)]",
-          large ? "h-full min-h-[220px]" : "h-[4.5rem] w-[6rem] sm:h-[5.25rem] sm:w-[7rem]",
+          large ? "h-full min-h-[220px]" : "h-[5.5rem] w-[7.5rem] sm:h-[6.5rem] sm:w-[8.75rem]",
         )}
         playsInline
         muted

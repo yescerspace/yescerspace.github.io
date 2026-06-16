@@ -23,8 +23,7 @@ type GalleryHandZoomBridgeProps = {
 };
 
 /**
- * ✊ → zoom in (yakınlaş)
- * 🖐️ yukarı → başlangıç kadrajı
+ * 🖐️ yukarı → başlangıç kadrajı (galeri zoom in kaldırıldı)
  */
 export function GalleryHandZoomBridge({
   orbitControlsRef,
@@ -50,30 +49,12 @@ export function GalleryHandZoomBridge({
     if (defaultPolarRef.current == null) {
       defaultPolarRef.current = controls.getPolarAngle();
     }
-    const defaultPolar = defaultPolarRef.current;
 
     const s = hand.sampleRef.current;
     const now = performance.now();
-    const zoomInTarget = THREE.MathUtils.lerp(
-      minDistance,
-      defaultDistance,
-      0.22,
-    );
 
-    if (s.fistHeld) {
-      targetRef.current = {
-        distance: zoomInTarget,
-        azimuth: controls.getAzimuthalAngle(),
-        polar: controls.getPolarAngle(),
-      };
-    } else if (s.zoomInPulse && now - lastPulseMsRef.current > 350) {
-      targetRef.current = {
-        distance: zoomInTarget,
-        azimuth: controls.getAzimuthalAngle(),
-        polar: controls.getPolarAngle(),
-      };
-      lastPulseMsRef.current = now;
-    } else if (s.resetZoomPulse && now - lastPulseMsRef.current > 350) {
+    if (s.resetZoomPulse && now - lastPulseMsRef.current > 350) {
+      const defaultPolar = defaultPolarRef.current!;
       targetRef.current = {
         distance: THREE.MathUtils.clamp(defaultDistance, minDistance, maxDistance),
         azimuth: defaultAzimuthRad,
@@ -94,8 +75,7 @@ export function GalleryHandZoomBridge({
     const curAz = controls.getAzimuthalAngle();
     const curPol = controls.getPolarAngle();
 
-    const held = s.fistHeld;
-    const smooth = held ? HAND_ZOOM_ANIM_SMOOTH * 1.3 : HAND_ZOOM_ANIM_SMOOTH;
+    const smooth = HAND_ZOOM_ANIM_SMOOTH;
     const nextDist = THREE.MathUtils.lerp(curDist, target.distance, smooth);
     const nextAz = THREE.MathUtils.lerp(curAz, target.azimuth, smooth);
     const nextPol = THREE.MathUtils.lerp(curPol, target.polar, smooth);
@@ -106,7 +86,6 @@ export function GalleryHandZoomBridge({
     controls.update();
 
     const done =
-      !held &&
       Math.abs(nextDist - target.distance) < 0.04 &&
       Math.abs(nextAz - target.azimuth) < 0.012 &&
       Math.abs(nextPol - target.polar) < 0.012;

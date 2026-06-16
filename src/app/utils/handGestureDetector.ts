@@ -3,7 +3,7 @@ import {
   isFistGesture,
   isFiveFingerOpenPalm,
   isIndexUpGesture,
-  isOkSignGesture,
+  isPinchPickGesture,
   isScrollOpenPalm,
   isStartPositionPose,
   isStrictFistGesture,
@@ -49,24 +49,24 @@ export type GestureDetectorSnapshot = {
 };
 
 const MAX_HISTORY = 15;
-const OK_CONFIRM_FRAMES = 8;
+const OK_CONFIRM_FRAMES = 12;
 const INDEX_CONFIRM_RATIO = 0.45;
 
 function featuresFromHand(hand: RawHandSide): GestureFrameFeatures {
   const lm = hand.landmarks;
   const indexUp = isIndexUpGesture(lm);
-  const okSign = isOkSignGesture(lm);
+  const pinchPick = isPinchPickGesture(lm);
   return {
     handed: hand.handed,
     isOpenHand:
       isFiveFingerOpenPalm(lm) &&
-      !okSign &&
+      !pinchPick &&
       !indexUp &&
       !isFistGesture(lm),
     isScrollPalm: isScrollOpenPalm(lm),
     isFist: isFistGesture(lm),
     isStrictFist: isStrictFistGesture(lm),
-    isOkSign: okSign,
+    isOkSign: pinchPick,
     isIndexPoint: indexUp,
     isStartPose: isStartPositionPose(lm),
     palmX: hand.palm.x,
@@ -129,7 +129,7 @@ export class HandGestureDetector {
     const okRecent = okHist.slice(-OK_CONFIRM_FRAMES);
     const okSignConfirmed =
       okRecent.length >= OK_CONFIRM_FRAMES &&
-      okRecent.filter(Boolean).length >= OK_CONFIRM_FRAMES - 1;
+      okRecent.filter(Boolean).length >= OK_CONFIRM_FRAMES;
 
     return {
       handDetected: last != null,

@@ -40,6 +40,7 @@ export function FooterNav() {
               <Link
                 key={link.path}
                 to={link.path}
+                data-hand-nav={link.path}
                 className={cn(
                   SHELL_NAV_LABEL_CLASSNAME,
                   "transition-colors duration-200",

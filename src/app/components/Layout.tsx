@@ -4,9 +4,29 @@ import { LanguageProvider, useLanguage } from "../context/LanguageContext";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { FooterNav } from "./FooterNav";
 import { HandControlOverlay } from "./HandControlOverlay";
-import { GalleryHandControlProvider } from "./galleryHandControl";
+import { ShellHandNavBridge } from "./ShellHandNavBridge";
+import { GalleryHandControlProvider, resetGalleryHandControlState, useGalleryHandControl } from "./galleryHandControl";
 import { syncDocumentCanonical } from "../config/site";
 import { cn } from "./ui/utils";
+
+function GalleryHandEscapeListener() {
+  const hand = useGalleryHandControl();
+
+  useEffect(() => {
+    if (!hand?.enabled) return;
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      resetGalleryHandControlState(hand);
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [hand]);
+
+  return null;
+}
 
 function LayoutShell() {
   const location = useLocation();
@@ -23,6 +43,7 @@ function LayoutShell() {
     pathname === "/about" ||
     pathname === "/connect" ||
     pathname === "/contact";
+  const handControlShell = isGallery || isAboutOrContact;
 
   useEffect(() => {
     document.title = messages.layout.documentTitle;
@@ -74,7 +95,13 @@ function LayoutShell() {
         </div>
       </div>
 
-      {isGallery ? <HandControlOverlay /> : null}
+      <GalleryHandEscapeListener />
+      {handControlShell ? (
+        <>
+          <ShellHandNavBridge active />
+          <HandControlOverlay />
+        </>
+      ) : null}
     </div>
   );
 }

@@ -105,19 +105,19 @@ export function isUserRightHand(landmarks: NormalizedLandmark[]): boolean {
 
 /** ✊ Yumruk — 👌/☝️ ile çakışmasın (OK işaretinde 2 parmak açık kalır). */
 export function isFistGesture(landmarks: NormalizedLandmark[]): boolean {
-  if (isOkSignGesture(landmarks) || isIndexUpGesture(landmarks)) return false;
+  if (isPinchPickGesture(landmarks) || isIndexUpGesture(landmarks)) return false;
   return countExtendedFingers(landmarks) <= 2;
 }
 
 /** ✊ Detay kapat — gevşek yumruktan daha sıkı (kaydırırken yanlış kapanmasın). */
 export function isStrictFistGesture(landmarks: NormalizedLandmark[]): boolean {
-  if (isOkSignGesture(landmarks) || isIndexUpGesture(landmarks)) return false;
+  if (isPinchPickGesture(landmarks) || isIndexUpGesture(landmarks)) return false;
   return countExtendedFingers(landmarks) <= 1;
 }
 
 /** 🖐️ Detay kaydırma avucu — 3+ parmak yeterli (MediaPipe bazen bir parmak kaçırır). */
 export function isScrollOpenPalm(landmarks: NormalizedLandmark[]): boolean {
-  if (isOkSignGesture(landmarks) || isIndexUpGesture(landmarks)) return false;
+  if (isPinchPickGesture(landmarks) || isIndexUpGesture(landmarks)) return false;
   if (isStrictFistGesture(landmarks)) return false;
   return countExtendedFingers(landmarks) >= 3;
 }
@@ -127,10 +127,15 @@ export function isFiveFingerOpenPalm(landmarks: NormalizedLandmark[]): boolean {
   return countExtendedFingers(landmarks) >= 4;
 }
 
+/** Başparmak ucu (4) ↔ işaret ucu (8) mesafesi / avuç ölçeği. */
+export function thumbIndexTipRatio(landmarks: NormalizedLandmark[]): number {
+  return dist(landmarks[4], landmarks[8]) / palmSpan(landmarks);
+}
+
 /** ☝️ İşaret parmağı yukarı — imleç */
 export function isIndexUpGesture(landmarks: NormalizedLandmark[]): boolean {
-  const span = palmSpan(landmarks);
-  if (dist(landmarks[4], landmarks[8]) < span * 0.32) return false;
+  const ratio = thumbIndexTipRatio(landmarks);
+  if (ratio < 0.15) return false;
   return (
     fingerExtended(landmarks, 8, 6) &&
     !fingerExtended(landmarks, 12, 10) &&
@@ -139,12 +144,10 @@ export function isIndexUpGesture(landmarks: NormalizedLandmark[]): boolean {
   );
 }
 
-/** 👌 OK işareti — gezegen seç */
-export function isOkSignGesture(landmarks: NormalizedLandmark[]): boolean {
-  if (isIndexUpGesture(landmarks)) return false;
-  const span = palmSpan(landmarks);
-  const tipDist = dist(landmarks[4], landmarks[8]);
-  if (tipDist > span * 0.42 || tipDist < span * 0.06) return false;
+/** 🤏 Pinch seçim — başparmak + işaret ucu birbirine değince */
+export function isPinchPickGesture(landmarks: NormalizedLandmark[]): boolean {
+  const ratio = thumbIndexTipRatio(landmarks);
+  if (ratio > 0.16 || ratio < 0.03) return false;
   if (!fingerExtended(landmarks, 8, 6)) return false;
   if (
     fingerExtended(landmarks, 12, 10) &&
@@ -152,8 +155,12 @@ export function isOkSignGesture(landmarks: NormalizedLandmark[]): boolean {
   ) {
     return false;
   }
-  const extended = countExtendedFingers(landmarks);
-  return extended >= 2 && extended <= 4;
+  return true;
+}
+
+/** 👌 @deprecated Pick için {@link isPinchPickGesture} kullan. */
+export function isOkSignGesture(landmarks: NormalizedLandmark[]): boolean {
+  return isPinchPickGesture(landmarks);
 }
 
 /** 🤏 Pinch (ayrı; seçimde kullanılmıyor). */
@@ -168,7 +175,7 @@ export function isPinchGesture(landmarks: NormalizedLandmark[]): boolean {
 /** 🖐️ Beş parmak açık — galeri ↕️ döndür / detay ↕️ kaydır. */
 export function isOpenPalmSplayedMove(landmarks: NormalizedLandmark[]): boolean {
   if (isFistGesture(landmarks) || isIndexUpGesture(landmarks)) return false;
-  if (isOkSignGesture(landmarks)) return false;
+  if (isPinchPickGesture(landmarks)) return false;
   return isFiveFingerOpenPalm(landmarks);
 }
 
@@ -358,14 +365,14 @@ export function classifyHand(
   const wrist = landmarks[WRIST];
 
   let gesture: HandGestureKind = "none";
-  if (isOkSignGesture(landmarks)) gesture = "okSign";
+  if (isPinchPickGesture(landmarks)) gesture = "pinch";
   else if (isIndexUpGesture(landmarks)) gesture = "indexUp";
   else if (isFistGesture(landmarks)) gesture = "fist";
   else if (isFiveFingerOpenPalm(landmarks)) gesture = "openPalm";
 
-  const okAim = gesture === "okSign";
-  const pointerX = okAim ? mirrorX((thumb.x + index.x) / 2) : mirrorX(index.x);
-  const pointerY = okAim ? (thumb.y + index.y) / 2 : index.y;
+  const pinchAim = gesture === "pinch";
+  const pointerX = pinchAim ? mirrorX((thumb.x + index.x) / 2) : mirrorX(index.x);
+  const pointerY = pinchAim ? (thumb.y + index.y) / 2 : index.y;
 
   return {
     detected: true,

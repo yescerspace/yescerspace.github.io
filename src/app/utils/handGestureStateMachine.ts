@@ -143,32 +143,22 @@ export class HandGestureStateMachine {
 
     switch (this.state) {
       case "IDLE":
-        if (g.isFist) this.state = "ZOOM_MODE";
-        else if (g.isIndexPoint) this.state = "SELECT_MODE";
+        if (g.isIndexPoint) this.state = "SELECT_MODE";
         else if (g.isOpenHand) this.state = "ROTATE_MODE";
         break;
       case "ROTATE_MODE":
-        if (g.isFist) this.state = "ZOOM_MODE";
-        else if (g.isIndexPoint) this.state = "SELECT_MODE";
+        if (g.isIndexPoint) this.state = "SELECT_MODE";
         else if (!g.isOpenHand) this.state = "IDLE";
         break;
       case "SELECT_MODE":
-        if (g.isFist) this.state = "ZOOM_MODE";
-        else if (g.isOpenHand && !g.isIndexPoint) this.state = "ROTATE_MODE";
+        if (g.isOpenHand && !g.isIndexPoint) this.state = "ROTATE_MODE";
         else if (!g.isIndexPoint && !g.isOkSign) this.state = "IDLE";
-        break;
-      case "ZOOM_MODE":
-        if (!g.isFist) this.state = "IDLE";
         break;
       default:
         this.state = "IDLE";
     }
 
-    if (g.isFist && !this.wasFist) {
-      out.zoomInPulse = this.allowPulse(now);
-    }
     this.wasFist = g.isFist;
-    out.fistHeld = g.isFist;
 
     if (g.okSignConfirmed && !this.wasOkSignConfirmed) {
       out.selectPulse = true;
@@ -277,10 +267,6 @@ export class HandGestureStateMachine {
       out.pointerActive = g.isIndexPoint;
       out.pointerX = g.indexPointerX;
       out.pointerY = g.indexPointerY;
-    }
-
-    if (this.state === "ZOOM_MODE") {
-      out.fistHeld = g.isFist;
     }
   }
 

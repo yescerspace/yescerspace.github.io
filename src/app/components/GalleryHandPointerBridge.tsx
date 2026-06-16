@@ -3,12 +3,12 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import type { GalleryImage } from "./Gallery3D";
 import { useGalleryHandControl } from "./galleryHandControl";
-import type { PhysicalHandState } from "./galleryHandControl";
 import {
   playGalleryClickSound,
   primeGalleryAudioEngineFromUserGesture,
 } from "../utils/galleryHoverSfx";
 import { prefetchDetailModalMedia } from "../utils/galleryMedia";
+import { aimFromHandSample, pinchAimFromHandSample } from "../utils/handAim";
 
 type GalleryHandPointerBridgeProps = {
   modalOpen: boolean;
@@ -20,43 +20,6 @@ type GalleryHandPointerBridgeProps = {
 };
 
 const HOVER_MEMORY_MS = 1800;
-const OK_PICK_HOLD_FRAMES = 3;
-
-function aimFromSample(
-  pointerActive: boolean,
-  pointerX: number,
-  pointerY: number,
-  left: PhysicalHandState,
-  right: PhysicalHandState,
-): { x: number; y: number } | null {
-  if (pointerActive) return { x: pointerX, y: pointerY };
-  if (right.detected && right.gesture === "okSign") {
-    return { x: right.pointerX, y: right.pointerY };
-  }
-  if (left.detected && left.gesture === "okSign") {
-    return { x: left.pointerX, y: left.pointerY };
-  }
-  if (right.detected && right.gesture === "indexUp") {
-    return { x: right.pointerX, y: right.pointerY };
-  }
-  if (left.detected && left.gesture === "indexUp") {
-    return { x: left.pointerX, y: left.pointerY };
-  }
-  return null;
-}
-
-function okAimFromSample(
-  left: PhysicalHandState,
-  right: PhysicalHandState,
-): { x: number; y: number } | null {
-  if (right.detected && right.gesture === "okSign") {
-    return { x: right.pointerX, y: right.pointerY };
-  }
-  if (left.detected && left.gesture === "okSign") {
-    return { x: left.pointerX, y: left.pointerY };
-  }
-  return null;
-}
 
 function raycastGalleryIndex(
   x: number,
@@ -126,7 +89,7 @@ function resolvePickIndex(
   );
 }
 
-/** ☝️ hover + 👌 seçim */
+/** ☝️ hover + 🤏 pinch seçim (başparmak + işaret teması, onaylı) */
 export function GalleryHandPointerBridge({
   modalOpen,
   images,
@@ -139,18 +102,14 @@ export function GalleryHandPointerBridge({
   const { camera, scene, raycaster } = useThree();
   const hoveredRef = useRef(hoveredIndex);
   const lastHoverRef = useRef<{ index: number; at: number } | null>(null);
-  const okHoldFramesRef = useRef(0);
-  const okPickLockedRef = useRef(false);
-  const wasOkSignRef = useRef(false);
+  const pickLockedRef = useRef(false);
   const wasEnabledRef = useRef(false);
 
   hoveredRef.current = hoveredIndex;
 
   useFrame(() => {
     if (!hand?.enabled) {
-      okHoldFramesRef.current = 0;
-      okPickLockedRef.current = false;
-      wasOkSignRef.current = false;
+      pickLockedRef.current = false;
       wasEnabledRef.current = false;
       lastHoverRef.current = null;
       return;
@@ -158,9 +117,7 @@ export function GalleryHandPointerBridge({
 
     if (!wasEnabledRef.current) {
       wasEnabledRef.current = true;
-      okHoldFramesRef.current = 0;
-      okPickLockedRef.current = false;
-      wasOkSignRef.current = false;
+      pickLockedRef.current = false;
       lastHoverRef.current = null;
       if (hoveredRef.current !== null) {
         setHoveredIndex(null);
@@ -170,33 +127,30 @@ export function GalleryHandPointerBridge({
 
     if (modalOpen) {
       if (hoveredRef.current !== null) setHoveredIndex(null);
-      okHoldFramesRef.current = 0;
-      okPickLockedRef.current = false;
-      wasOkSignRef.current = false;
+      pickLockedRef.current = false;
       lastHoverRef.current = null;
       return;
     }
 
     const s = hand.sampleRef.current;
     const now = performance.now();
-    const aim = aimFromSample(
+    const aim = aimFromHandSample(
       s.pointerActive,
       s.pointerX,
       s.pointerY,
       s.userLeft,
       s.userRight,
     );
-    const okSign =
-      s.userRight.gesture === "okSign" ||
-      s.userLeft.gesture === "okSign" ||
-      s.selectPulse;
     const hoverMemory =
       lastHoverRef.current &&
       now - lastHoverRef.current.at < HOVER_MEMORY_MS
         ? lastHoverRef.current.index
         : null;
 
-    if (aim) {
+    const pinching =
+      s.userRight.gesture === "pinch" || s.userLeft.gesture === "pinch";
+
+    if (aim && s.pointerActive) {
       const nextHover = raycastGalleryIndex(
         aim.x,
         aim.y,
@@ -213,52 +167,41 @@ export function GalleryHandPointerBridge({
       if (nextHover != null) {
         lastHoverRef.current = { index: nextHover, at: now };
       }
-    } else if (okSign && hoverMemory != null) {
-      // ☝️ → 👌 geçişinde hover korunur.
+    } else if ((pinching || s.selectPulse) && hoverMemory != null) {
+      // ☝️ → 🤏 geçişinde hover korunur.
     } else if (hoveredRef.current !== null) {
       setHoveredIndex(null);
       hoveredRef.current = null;
     }
 
-    const tryPick = (pickAim: { x: number; y: number } | null) => {
-      if (okPickLockedRef.current || !pickAim) return false;
-      const pickIndex = resolvePickIndex(
-        hoveredRef.current,
-        hoverMemory,
-        pickAim,
-        raycaster,
-        camera,
-        scene,
-        images,
-        visibleIndices,
-      );
-      if (pickPlanet(pickIndex, images, onPick)) {
-        okPickLockedRef.current = true;
-        return true;
-      }
-      return false;
-    };
-
-    if (!okSign) {
-      okHoldFramesRef.current = 0;
-      okPickLockedRef.current = false;
-    } else {
-      okHoldFramesRef.current += 1;
-      const pickAim = aim ?? okAimFromSample(s.userLeft, s.userRight);
-      if (
-        !okPickLockedRef.current &&
-        okHoldFramesRef.current >= OK_PICK_HOLD_FRAMES
-      ) {
-        tryPick(pickAim);
+    if (!s.selectPulse) {
+      pickLockedRef.current = false;
+    } else if (!pickLockedRef.current) {
+      const pickAim =
+        pinchAimFromHandSample(s.userLeft, s.userRight) ??
+        aim ??
+        (hoverMemory != null && lastHoverRef.current
+          ? {
+              x: s.pointerX,
+              y: s.pointerY,
+            }
+          : null);
+      if (pickAim) {
+        const pickIndex = resolvePickIndex(
+          hoveredRef.current,
+          hoverMemory,
+          pickAim,
+          raycaster,
+          camera,
+          scene,
+          images,
+          visibleIndices,
+        );
+        if (pickPlanet(pickIndex, images, onPick)) {
+          pickLockedRef.current = true;
+        }
       }
     }
-
-    if (okSign && !wasOkSignRef.current && !okPickLockedRef.current) {
-      const pickAim = aim ?? okAimFromSample(s.userLeft, s.userRight);
-      tryPick(pickAim);
-    }
-
-    wasOkSignRef.current = okSign;
   });
 
   return null;

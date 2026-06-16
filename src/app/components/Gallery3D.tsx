@@ -4009,13 +4009,29 @@ export function Gallery3D({
                 </button>
               </div>
 
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  closeModal();
+                }}
+                className="fixed right-6 top-[max(1rem,env(safe-area-inset-top))] z-[60] hidden shrink-0 rounded-full bg-card p-2.5 text-foreground transition-transform hover:scale-105 sm:inline-flex lg:right-10 lg:top-10"
+                style={{
+                  boxShadow:
+                    "0 4px 24px color-mix(in oklch, oklch(0.05 0.02 268) 55%, transparent)",
+                }}
+                aria-label={galleryCopy.close}
+              >
+                <X className="h-5 w-5 text-muted-foreground" />
+              </button>
+
             <motion.div
               key="modal-card"
               initial={{ scale: 0.94, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.94, opacity: 0, y: 20 }}
               transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-              className="relative mx-auto my-auto flex w-full max-w-6xl min-h-0 flex-col gap-10 pb-4 sm:mx-0 lg:grid lg:grid-cols-[minmax(0,560px)_minmax(0,28rem)] lg:items-stretch lg:gap-x-14"
+              className="relative mx-auto my-auto flex w-full max-w-6xl min-h-0 flex-col gap-10 pb-4 sm:mx-0 lg:grid lg:grid-cols-[minmax(0,560px)_minmax(0,28rem)] lg:items-stretch lg:gap-x-24"
               onClick={(e: MouseEvent<HTMLDivElement>) => e.stopPropagation()}
             >
               <div className="min-h-0 w-full min-w-0 shrink-0 bg-app-shell-bg lg:col-start-1 lg:row-start-1 lg:relative lg:max-w-none lg:self-stretch lg:min-h-[min(70vh,580px)]">
@@ -4152,19 +4168,6 @@ export function Gallery3D({
                 </div>
                 </div>
               </motion.div>
-
-              <button
-                type="button"
-                onClick={closeModal}
-                className="absolute top-2 left-full ml-2 hidden shrink-0 rounded-full bg-card p-2.5 text-foreground transition-transform hover:scale-105 sm:ml-3 sm:inline-flex"
-                style={{
-                  boxShadow:
-                    "0 4px 24px color-mix(in oklch, oklch(0.05 0.02 268) 55%, transparent)",
-                }}
-                aria-label={galleryCopy.close}
-              >
-                <X className="h-5 w-5 text-muted-foreground" />
-              </button>
             </motion.div>
             </div>
           </motion.div>
