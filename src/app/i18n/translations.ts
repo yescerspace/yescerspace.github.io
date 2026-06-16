@@ -301,7 +301,7 @@ const en: TranslationMessages = {
   },
   gallery: {
     exploreHint: "Drag, scroll.. You're in control!",
-    switchToCamera: "Enter Hands Mode!",
+    switchToCamera: "Enter Hands Mode 👋",
     switchToCameraOff: "Camera Off",
     modalYear: "Year",
     modalToolsLabel: "Tools",
@@ -421,7 +421,7 @@ const de: TranslationMessages = {
   },
   gallery: {
     exploreHint: "Scrollen, ziehen… deine Kontrolle, einfach volle!",
-    switchToCamera: "Handmodus Aktivieren!",
+    switchToCamera: "Hands Mode starten 👋",
     switchToCameraOff: "Kamera Stopp",
     modalYear: "Jahr",
     modalToolsLabel: "Tools",
@@ -541,7 +541,7 @@ const tr: TranslationMessages = {
   },
   gallery: {
     exploreHint: "Kaydır, sürükle.. kontrol sende!",
-    switchToCamera: "Eller Havaya!",
+    switchToCamera: "Hands Mode'a Gir 👋",
     switchToCameraOff: "Kamerayı Kapat",
     modalYear: "Yıl",
     modalToolsLabel: "Araçlar",
