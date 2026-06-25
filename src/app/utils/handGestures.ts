@@ -147,14 +147,10 @@ export function isIndexUpGesture(landmarks: NormalizedLandmark[]): boolean {
 /** 🤏 Pinch seçim — başparmak + işaret ucu birbirine değince */
 export function isPinchPickGesture(landmarks: NormalizedLandmark[]): boolean {
   const ratio = thumbIndexTipRatio(landmarks);
-  if (ratio > 0.16 || ratio < 0.03) return false;
+  // Uçlar yeterince yakın olsun; çok sıkı bastırınca (ratio≈0) da geçerli.
+  if (ratio > 0.17) return false;
+  // İşaret parmağı dümdüz kıvrık değil (yumruktan ayırt et).
   if (!fingerExtended(landmarks, 8, 6)) return false;
-  if (
-    fingerExtended(landmarks, 12, 10) &&
-    fingerExtended(landmarks, 16, 14)
-  ) {
-    return false;
-  }
   return true;
 }
 

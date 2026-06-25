@@ -1,11 +1,9 @@
 import { useLanguage } from "../context/LanguageContext";
 import type { HandGestureRuleItem } from "../i18n/translations";
-import handSwipePageImg from "../assets/hand-swipe-page.png";
 import handEscKeyImg from "../assets/hand-gesture-esc-key.png";
 import { cn } from "./ui/utils";
 
 const RULE_IMAGE_SRC = {
-  swipePage: handSwipePageImg,
   escKey: handEscKeyImg,
 } as const;
 

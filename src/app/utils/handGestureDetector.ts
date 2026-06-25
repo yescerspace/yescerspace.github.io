@@ -49,7 +49,8 @@ export type GestureDetectorSnapshot = {
 };
 
 const MAX_HISTORY = 15;
-const OK_CONFIRM_FRAMES = 12;
+const OK_CONFIRM_FRAMES = 6;
+const OK_CONFIRM_RATIO = 0.5;
 const INDEX_CONFIRM_RATIO = 0.45;
 
 function featuresFromHand(hand: RawHandSide): GestureFrameFeatures {
@@ -129,7 +130,7 @@ export class HandGestureDetector {
     const okRecent = okHist.slice(-OK_CONFIRM_FRAMES);
     const okSignConfirmed =
       okRecent.length >= OK_CONFIRM_FRAMES &&
-      okRecent.filter(Boolean).length >= OK_CONFIRM_FRAMES;
+      okRecent.filter(Boolean).length / okRecent.length >= OK_CONFIRM_RATIO;
 
     return {
       handDetected: last != null,

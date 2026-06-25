@@ -95,7 +95,7 @@ export type PortfolioProjectCopy = {
 export type HandGestureRuleItem = {
   emojis: readonly string[];
   label: string;
-  imageKey?: "swipePage" | "escKey";
+  imageKey?: "escKey";
 };
 
 export type TranslationMessages = {
@@ -265,9 +265,8 @@ const en: TranslationMessages = {
       { emojis: ["👌"], label: "Click (thumb + index)" },
       { emojis: ["✊"], label: "Close" },
       {
-        emojis: ["↔️"],
-        imageKey: "swipePage",
-        label: "Change the page",
+        emojis: ["☝️", "👌"],
+        label: "Point at the bottom menu, then pick to change page",
       },
       { emojis: [], imageKey: "escKey", label: "Camera Off" },
     ],
@@ -379,9 +378,8 @@ const de: TranslationMessages = {
       { emojis: ["👌"], label: "Klicken (Daumen + Zeigefinger)" },
       { emojis: ["✊"], label: "Schließen" },
       {
-        emojis: ["↔️"],
-        imageKey: "swipePage",
-        label: "Seite wechseln",
+        emojis: ["☝️", "👌"],
+        label: "Auf das untere Menü zeigen, dann wählen zum Seitenwechsel",
       },
       { emojis: [], imageKey: "escKey", label: "Kamera aus" },
     ],
@@ -499,9 +497,8 @@ const tr: TranslationMessages = {
       { emojis: ["👌"], label: "Tıkla (başparmak + işaret)" },
       { emojis: ["✊"], label: "Kapat" },
       {
-        emojis: ["↔️"],
-        imageKey: "swipePage",
-        label: "Sayfa değiştir",
+        emojis: ["☝️", "👌"],
+        label: "Alt menüyü işaret et, sonra seçerek sayfa değiştir",
       },
       { emojis: [], imageKey: "escKey", label: "Kamerayı kapat" },
     ],
