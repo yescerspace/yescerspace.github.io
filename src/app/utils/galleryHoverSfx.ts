@@ -71,24 +71,36 @@ function injectGalleryClickSfxPreloadHint(): void {
   head.appendChild(link);
 }
 
-const inflightArrayBuffers: Promise<ArrayBuffer[]> =
-  typeof window === "undefined"
-    ? Promise.resolve([])
-    : Promise.all(
-        HOVER_SFX_URLS.map((url) =>
-          fetch(url).then((r) => {
-            if (!r.ok) throw new Error(`SFX ${r.status}`);
-            return r.arrayBuffer();
-          }),
-        ),
-      ).catch(() => [] as ArrayBuffer[]);
+/**
+ * SES İNDİRME TEMBEL: modül yüklenince DEĞİL, ilk kullanıcı jestinde / tarayıcı boştayken başlar.
+ * Böylece ilk sayfa açılışı ~1 MB ses indirmesiyle yarışmaz.
+ */
+let hoverArrayBuffersPromise: Promise<ArrayBuffer[]> | null = null;
+function getHoverArrayBuffers(): Promise<ArrayBuffer[]> {
+  if (typeof window === "undefined") return Promise.resolve([]);
+  if (!hoverArrayBuffersPromise) {
+    hoverArrayBuffersPromise = Promise.all(
+      HOVER_SFX_URLS.map((url) =>
+        fetch(url).then((r) => {
+          if (!r.ok) throw new Error(`SFX ${r.status}`);
+          return r.arrayBuffer();
+        }),
+      ),
+    ).catch(() => [] as ArrayBuffer[]);
+  }
+  return hoverArrayBuffersPromise;
+}
 
-const clickInflightArrayBuffer: Promise<ArrayBuffer | null> =
-  typeof window === "undefined"
-    ? Promise.resolve(null)
-    : fetch(galleryClickMp3Url)
-        .then((r) => (r.ok ? r.arrayBuffer() : null))
-        .catch(() => null);
+let clickArrayBufferPromise: Promise<ArrayBuffer | null> | null = null;
+function getClickArrayBuffer(): Promise<ArrayBuffer | null> {
+  if (typeof window === "undefined") return Promise.resolve(null);
+  if (!clickArrayBufferPromise) {
+    clickArrayBufferPromise = fetch(galleryClickMp3Url)
+      .then((r) => (r.ok ? r.arrayBuffer() : null))
+      .catch(() => null);
+  }
+  return clickArrayBufferPromise;
+}
 
 let decodedClickBuffer: AudioBuffer | null = null;
 let clickBufferLoadPromise: Promise<AudioBuffer | null> | null = null;
@@ -188,7 +200,7 @@ async function decodeAllBuffers(): Promise<void> {
   const ctx = getAudioContext();
   if (!ctx) return;
 
-  const abs = await inflightArrayBuffers;
+  const abs = await getHoverArrayBuffers();
   if (abs.length !== HOVER_SFX_URLS.length) return;
 
   decodedBuffers = await Promise.all(
@@ -196,12 +208,31 @@ async function decodeAllBuffers(): Promise<void> {
   );
 }
 
+let warmupScheduled = false;
+/** İndirme ipuçları + arka plan fetch'i tarayıcı boştayken başlat (içerikle yarışmasın). */
+function scheduleAudioWarmup(): void {
+  if (warmupScheduled || typeof window === "undefined") return;
+  warmupScheduled = true;
+  const warm = () => {
+    injectGalleryHoverSfxPreloadHints();
+    injectGalleryClickSfxPreloadHint();
+    void getHoverArrayBuffers();
+    void getClickArrayBuffer();
+  };
+  const ric = (
+    window as unknown as {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => void;
+    }
+  ).requestIdleCallback;
+  if (typeof ric === "function") ric(warm, { timeout: 3000 });
+  else setTimeout(warm, 1500);
+}
+
 export function preloadGalleryHoverSfx(): void {
   if (typeof window === "undefined") return;
-  injectGalleryHoverSfxPreloadHints();
-  injectGalleryClickSfxPreloadHint();
   wireContextUnlockOnce();
   wireLifecycleResumeBestEffort();
+  scheduleAudioWarmup();
   const ctx = getAudioContext();
   if (ctx) {
     queueHoverDecodeIfNeeded();
@@ -223,7 +254,7 @@ async function loadDecodedClickBuffer(): Promise<AudioBuffer | null> {
   if (!ctx) {
     return null;
   }
-  const ab = await clickInflightArrayBuffer;
+  const ab = await getClickArrayBuffer();
   if (!ab) {
     clickDecodeFailed = true;
     return null;

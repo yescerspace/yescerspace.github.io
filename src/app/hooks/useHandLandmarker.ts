@@ -1,8 +1,7 @@
 import { useEffect, useRef } from "react";
-import {
-  FilesetResolver,
+import type {
   HandLandmarker,
-  type NormalizedLandmark,
+  NormalizedLandmark,
 } from "@mediapipe/tasks-vision";
 import {
   type GalleryHandSample,
@@ -130,6 +129,12 @@ export function useHandLandmarker(opts: {
 
     const boot = async () => {
       try {
+        // MediaPipe sadece Hands Mode açılınca yüklensin (ana paketten ayrı chunk).
+        const { FilesetResolver, HandLandmarker } = await import(
+          "@mediapipe/tasks-vision"
+        );
+        if (cancelled) return;
+
         const vision = await FilesetResolver.forVisionTasks(MEDIAPIPE_WASM_BASE);
         if (cancelled) return;
 
