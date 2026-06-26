@@ -44,6 +44,7 @@ import {
   detailPageMediaUrls,
   detailVideoPosterUrl,
   firstDetailVideoUrl,
+  galleryCardThumbUrl,
   galleryFilenameIndex,
   isVideoUrl,
   prefetchDetailModalMedia,
@@ -457,7 +458,10 @@ function getLightCardPlaceholderTexture(): THREE.DataTexture {
  * Loads a texture via TextureLoader; never throws. Falls back to `publicAsset("fallback.jpg")`, then a solid color.
  * Starts from a light placeholder so the card is never texture-null while loading.
  */
-function useResilientTexture(imageUrl: string | undefined): THREE.Texture | null {
+function useResilientTexture(
+  imageUrl: string | undefined,
+  fallbackUrl?: string | undefined,
+): THREE.Texture | null {
   const placeholder = getLightCardPlaceholderTexture();
   const [texture, setTexture] = useState<THREE.Texture | null>(() => placeholder);
   const lastLoadedRef = useRef<THREE.Texture | null>(null);
@@ -514,7 +518,7 @@ function useResilientTexture(imageUrl: string | undefined): THREE.Texture | null
       );
     };
 
-    const loadPrimary = (url: string) => {
+    const loadPrimary = (url: string, onFail: () => void) => {
       loadGalleryTextureUrl(
         url,
         (loaded) => {
@@ -525,24 +529,22 @@ function useResilientTexture(imageUrl: string | undefined): THREE.Texture | null
           applySquareFaceTextureUV(loaded);
           commit(loaded);
         },
-        () => {
-          console.error(
-            "[Gallery3D] Image failed to load (using fallback asset):",
-            url,
-          );
-          loadFallbackAsset();
-        },
+        onFail,
       );
     };
 
     const primary = imageUrl?.trim();
+    const secondary = fallbackUrl?.trim();
     if (!primary) {
       console.warn(
         "[Gallery3D] Missing or empty image URL; using fallback asset.",
       );
       loadFallbackAsset();
+    } else if (secondary && secondary !== primary) {
+      // Önce küçük WebP thumb; yoksa orijinal kapak; o da olmazsa global fallback.
+      loadPrimary(primary, () => loadPrimary(secondary, loadFallbackAsset));
     } else {
-      loadPrimary(primary);
+      loadPrimary(primary, loadFallbackAsset);
     }
 
     return () => {
@@ -550,7 +552,7 @@ function useResilientTexture(imageUrl: string | undefined): THREE.Texture | null
       disposeLastLoaded();
       setTexture(placeholder);
     };
-  }, [imageUrl, placeholder]);
+  }, [imageUrl, fallbackUrl, placeholder]);
 
   return texture;
 }
@@ -1924,7 +1926,14 @@ function GalleryCardMesh({
   const lastBaseLocalRef = useRef({ x: 0, y: 0, z: 0 });
 
   const finalImageUrl = primaryGalleryImageUrl(image);
-  const texture = useResilientTexture(finalImageUrl);
+  const cardThumbUrl = useMemo(
+    () => galleryCardThumbUrl(image.images) ?? undefined,
+    [image.images],
+  );
+  const texture = useResilientTexture(
+    cardThumbUrl ?? finalImageUrl,
+    cardThumbUrl ? finalImageUrl : undefined,
+  );
 
   useEffect(() => {
     if (!texture) return;

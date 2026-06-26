@@ -78,6 +78,10 @@ if (existsSync(manifestPath)) {
       if (/\.mp4$/i.test(img)) {
         galleryFiles.add(img.replace(/\.mp4$/i, "-.jpg"));
       }
+      // 3D kart dokusu: küçük WebP kapak (manifest'te değil, ayrıca staging'e ekle).
+      if (/\/00\.(jpe?g|png|webp)$/i.test(img)) {
+        galleryFiles.add(img.replace(/\/00\.[^/.]+$/i, "/00-thumb.webp"));
+      }
     }
   }
   for (const rel of galleryFiles) {

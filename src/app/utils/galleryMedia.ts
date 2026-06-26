@@ -172,3 +172,20 @@ export function primaryGalleryTextureUrl(urls: readonly string[]): string {
   }
   return fb;
 }
+
+/**
+ * 3D kart dokusu için küçük WebP kapak: `gallery/<n>/00-thumb.webp`.
+ * `optimize-gallery-covers.mjs` üretir; yoksa çağıran orijinal kapağa düşmeli.
+ */
+export function galleryCardThumbUrl(urls: readonly string[]): string | null {
+  for (const raw of urls) {
+    const u = raw?.trim();
+    if (!u) continue;
+    if (coverBasename(u) && isRasterImageUrl(u)) {
+      const thumb = pathOnly(u).replace(/\/00\.[^/.]+$/i, "/00-thumb.webp");
+      if (thumb === pathOnly(u)) return null;
+      return publicAsset(thumb);
+    }
+  }
+  return null;
+}
