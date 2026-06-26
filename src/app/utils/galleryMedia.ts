@@ -100,21 +100,19 @@ export function prefetchDetailModalMedia(urls: readonly string[]): void {
     if (!u) continue;
     const link = document.createElement("link");
     link.rel = "preload";
-    link.href = u;
     link.setAttribute("data-gallery-detail-preload", "1");
     if (isVideoUrl(u)) {
-      link.as = "video";
-      document.head.appendChild(link);
+      // Video gövdesini ön-indirme (büyük olabilir) — yalnızca poster’ı çek;
+      // video kullanıcı oynatınca progresif stream’lenir.
       const poster = detailVideoPosterUrl(u);
       if (poster) {
-        const pl = document.createElement("link");
-        pl.rel = "preload";
-        pl.href = poster;
-        pl.as = "image";
-        pl.setAttribute("data-gallery-detail-preload", "1");
-        document.head.appendChild(pl);
+        link.href = poster;
+        link.as = "image";
+        document.head.appendChild(link);
       }
     } else if (isRasterImageUrl(u)) {
+      // Optimize edilmiş WebP varsa onu ön-indir (orijinal yerine).
+      link.href = optimizedDetailImageUrl(u) ?? u;
       link.as = "image";
       document.head.appendChild(link);
     } else {
@@ -175,7 +173,7 @@ export function primaryGalleryTextureUrl(urls: readonly string[]): string {
 
 /**
  * 3D kart dokusu için küçük WebP kapak: `gallery/<n>/00-thumb.webp`.
- * `optimize-gallery-covers.mjs` üretir; yoksa çağıran orijinal kapağa düşmeli.
+ * `optimize-gallery-images.mjs` üretir; yoksa çağıran orijinal kapağa düşmeli.
  */
 export function galleryCardThumbUrl(urls: readonly string[]): string | null {
   for (const raw of urls) {
@@ -188,4 +186,24 @@ export function galleryCardThumbUrl(urls: readonly string[]): string | null {
     }
   }
   return null;
+}
+
+/**
+ * Detay modalı için optimize edilmiş WebP slayt: `…/gallery/<n>/<k>.jpg` → `…/gallery/<n>/<k>-web.webp`.
+ * `optimize-gallery-images.mjs` üretir (maks. 1600px). Yalnızca numaralı raster slaytlar için;
+ * video / kapak / poster için `null` döner. Dosya yoksa çağıran orijinale düşmeli.
+ *
+ * Girdi zaten `publicAsset`’le çözümlenmiş yoldur (bkz. galleryData) — yalnızca dosya adını dönüştürür,
+ * cache-bust eklemez (çağıran `withGalleryAssetCacheBust` uygular).
+ */
+export function optimizedDetailImageUrl(url: string): string | null {
+  const u = url?.trim();
+  if (!u) return null;
+  if (isVideoUrl(u) || !isRasterImageUrl(u)) return null;
+  const idx = galleryFilenameIndex(u);
+  if (idx === null || idx < 1) return null;
+  const base = pathOnly(u);
+  const optimized = base.replace(/\/(\d+)\.[^/.]+$/i, "/$1-web.webp");
+  if (optimized === base) return null;
+  return optimized;
 }

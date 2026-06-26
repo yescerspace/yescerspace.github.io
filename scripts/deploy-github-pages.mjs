@@ -82,6 +82,11 @@ if (existsSync(manifestPath)) {
       if (/\/00\.(jpe?g|png|webp)$/i.test(img)) {
         galleryFiles.add(img.replace(/\/00\.[^/.]+$/i, "/00-thumb.webp"));
       }
+      // Detay modalı: optimize WebP slayt (`<n>-web.webp`, manifest'te değil).
+      const slide = img.match(/\/(\d+)\.(jpe?g|png|webp)$/i);
+      if (slide && slide[1] !== "00") {
+        galleryFiles.add(img.replace(/\/(\d+)\.[^/.]+$/i, "/$1-web.webp"));
+      }
     }
   }
   for (const rel of galleryFiles) {

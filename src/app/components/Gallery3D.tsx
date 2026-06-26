@@ -47,6 +47,7 @@ import {
   galleryCardThumbUrl,
   galleryFilenameIndex,
   isVideoUrl,
+  optimizedDetailImageUrl,
   prefetchDetailModalMedia,
   primaryGalleryTextureUrl,
   withGalleryAssetCacheBust,
@@ -3243,6 +3244,8 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
   const detailUrls = useMemo(() => detailPageMediaUrls(urls), [urls]);
   const firstVideoUrl = useMemo(() => firstDetailVideoUrl(urls), [urls]);
   const [failed, setFailed] = useState<Record<string, boolean>>({});
+  /** Slayt için optimize WebP (`<n>-web.webp`) yüklenemedi → orijinal slayta düş. */
+  const [webpFailed, setWebpFailed] = useState<Record<string, boolean>>({});
   const [mediaDims, setMediaDims] = useState<Record<string, DetailMediaDims>>(
     {},
   );
@@ -3274,6 +3277,7 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
   useEffect(() => {
     setReadyUrls(new Set());
     setMediaDims({});
+    setWebpFailed({});
   }, [detailUrlsKey]);
 
   const rememberMediaDims = useCallback((url: string, w: number, h: number) => {
@@ -3468,9 +3472,11 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
         aria-busy={!detailMediaAllReady}
       >
         {detailUrls.map((url, i) => {
+          const optimizedUrl = optimizedDetailImageUrl(url);
+          const useOptimized = optimizedUrl != null && !webpFailed[url];
           const src = failed[url]
             ? fallbackImageUrl()
-            : withGalleryAssetCacheBust(url);
+            : withGalleryAssetCacheBust(useOptimized ? optimizedUrl : url);
           const indexLabel = galleryFilenameIndex(url);
           const showVideo = !failed[url] && isVideoUrl(src);
           const label =
@@ -3501,7 +3507,7 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
                   controls
                   controlsList="nodownload"
                   playsInline
-                  preload="auto"
+                  preload={isPrimaryDetailVideo ? "auto" : "metadata"}
                   {...(isPrimaryDetailVideo
                     ? ({ fetchPriority: "high" } as VideoHTMLAttributes<HTMLVideoElement>)
                     : ({
@@ -3557,6 +3563,11 @@ const ProjectImageScroll = forwardRef(function ProjectImageScroll(
                     markDetailMediaReady(url);
                   }}
                   onError={() => {
+                    if (useOptimized) {
+                      // Optimize WebP yoksa orijinal slayta düş (henüz hata sayma).
+                      setWebpFailed((f) => ({ ...f, [url]: true }));
+                      return;
+                    }
                     setFailed((f) => ({ ...f, [url]: true }));
                     markDetailMediaReady(url);
                     console.error("[Gallery3D] Modal image failed:", url);
